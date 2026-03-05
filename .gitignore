@@ -11,11 +11,11 @@ out/
 .next/
 .turbo/
 
-# Automaker
-.automaker/images/
-.automaker/
-/.automaker/*
-/.automaker/
+# Taktician
+.taktician/images/
+.taktician/
+/.taktician/*
+/.taktician/
 
 .worktrees/
 

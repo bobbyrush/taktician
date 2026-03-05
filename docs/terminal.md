@@ -1,6 +1,6 @@
 # Terminal
 
-The integrated terminal provides a full-featured terminal emulator within Automaker, powered by xterm.js.
+The integrated terminal provides a full-featured terminal emulator within Taktician, powered by xterm.js.
 
 ## Configuration
 
