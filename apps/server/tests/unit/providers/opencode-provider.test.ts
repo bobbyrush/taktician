@@ -3,11 +3,11 @@ import {
   OpencodeProvider,
   resetToolUseIdCounter,
 } from '../../../src/providers/opencode-provider.js';
-import type { ProviderMessage, ModelDefinition } from '@automaker/types';
+import type { ProviderMessage, ModelDefinition } from '@taktician/types';
 import { collectAsyncGenerator } from '../../utils/helpers.js';
-import { spawnJSONLProcess, getOpenCodeAuthIndicators } from '@automaker/platform';
+import { spawnJSONLProcess, getOpenCodeAuthIndicators } from '@taktician/platform';
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@taktician/platform', () => ({
   spawnJSONLProcess: vi.fn(),
   isWslAvailable: vi.fn().mockReturnValue(false),
   findCliInWsl: vi.fn().mockReturnValue(null),

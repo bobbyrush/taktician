@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { createLogger } from '@automaker/utils/logger';
-import type { PhaseModelEntry } from '@automaker/types';
+import { createLogger } from '@taktician/utils/logger';
+import type { PhaseModelEntry } from '@taktician/types';
 import { useAppStore } from '@/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
 

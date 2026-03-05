@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import { useAppStore } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
 import { getHttpApiClient } from '@/lib/http-api-client';
@@ -119,7 +119,7 @@ export function ContextView() {
   // Get context directory path for user-added context files
   const getContextPath = useCallback(() => {
     if (!currentProject) return null;
-    return `${currentProject.path}/.automaker/context`;
+    return `${currentProject.path}/.taktician/context`;
   }, [currentProject]);
 
   const isMarkdownFile = (filename: string): boolean => {
@@ -279,7 +279,7 @@ export function ContextView() {
       }
 
       const message =
-        result.error || `Automaker couldn't generate a description for “${fileName}”.`;
+        result.error || `Taktician couldn't generate a description for “${fileName}”.`;
       toast.error('Failed to generate description', { description: message });
     } catch (error) {
       logger.error('Failed to generate description:', error);
@@ -348,7 +348,7 @@ export function ContextView() {
       let imagePathForDescription: string | undefined;
 
       if (isImage) {
-        // For images: sanitize filename, store in .automaker/images
+        // For images: sanitize filename, store in .taktician/images
         fileName = sanitizeFilename(file.name);
 
         // Read file as base64
@@ -364,7 +364,7 @@ export function ContextView() {
         // Determine mime type from original file
         const mimeType = file.type || 'image/png';
 
-        // Use saveImageToTemp to properly save as binary file in .automaker/images
+        // Use saveImageToTemp to properly save as binary file in .taktician/images
         const saveResult = await api.saveImageToTemp?.(
           base64Data,
           fileName,

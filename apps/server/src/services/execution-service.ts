@@ -3,10 +3,10 @@
  */
 
 import path from 'path';
-import type { Feature } from '@automaker/types';
-import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@automaker/utils';
-import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
-import { getFeatureDir } from '@automaker/platform';
+import type { Feature } from '@taktician/types';
+import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@taktician/utils';
+import { resolveModelString, DEFAULT_MODELS } from '@taktician/model-resolver';
+import { getFeatureDir } from '@taktician/platform';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import * as secureFs from '../lib/secure-fs.js';
 import {
@@ -21,6 +21,7 @@ import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
+import type { WorkspaceExecutionService } from './workspace-execution-service.js';
 import { pipelineService } from './pipeline-service.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
@@ -86,7 +87,8 @@ export class ExecutionService {
     private signalPauseFn: SignalPauseFn,
     private recordSuccessFn: RecordSuccessFn,
     private saveExecutionStateFn: SaveExecutionStateFn,
-    private loadContextFilesFn: LoadContextFilesFn
+    private loadContextFilesFn: LoadContextFilesFn,
+    private workspaceExecutionService: WorkspaceExecutionService | null = null
   ) {}
 
   private acquireRunningFeature(options: {
@@ -169,9 +171,28 @@ ${feature.spec}
     const abortController = tempRunningFeature.abortController;
     if (isAutoMode) await this.saveExecutionStateFn(projectPath);
     let feature: Feature | null = null;
+    let syncedVpsWorkspace = false;
+    let useWorktreesForRun = useWorktrees;
+    let providedWorktreePathForRun = providedWorktreePath;
 
     try {
       validateWorkingDirectory(projectPath);
+      if (!options?._calledInternally && this.workspaceExecutionService) {
+        const resolvedWorkspace =
+          await this.workspaceExecutionService.resolveVpsWorkspace(projectPath);
+        if (resolvedWorkspace) {
+          if (useWorktreesForRun || providedWorktreePathForRun) {
+            logger.info(
+              `[executeFeature] Feature ${featureId}: disabling worktree execution for VPS workspace "${resolvedWorkspace.project.name}"`
+            );
+          }
+          useWorktreesForRun = false;
+          providedWorktreePathForRun = undefined;
+          await this.workspaceExecutionService.syncRemoteToLocal(projectPath);
+          syncedVpsWorkspace = true;
+        }
+      }
+
       feature = await this.loadFeatureFn(projectPath, featureId);
       if (!feature) throw new Error(`Feature ${featureId} not found`);
 
@@ -199,20 +220,20 @@ ${feature.spec}
           return await this.executeFeature(
             projectPath,
             featureId,
-            useWorktrees,
+            useWorktreesForRun,
             isAutoMode,
-            providedWorktreePath,
+            providedWorktreePathForRun,
             { continuationPrompt, _calledInternally: true }
           );
         }
         if (await this.contextExistsFn(projectPath, featureId)) {
-          return await this.resumeFeatureFn(projectPath, featureId, useWorktrees, true);
+          return await this.resumeFeatureFn(projectPath, featureId, useWorktreesForRun, true);
         }
       }
 
-      let worktreePath: string | null = providedWorktreePath ?? null;
+      let worktreePath: string | null = providedWorktreePathForRun ?? null;
       const branchName = feature.branchName;
-      if (!worktreePath && useWorktrees && branchName) {
+      if (!worktreePath && useWorktreesForRun && branchName) {
         worktreePath = await this.worktreeResolver.findWorktreeForBranch(projectPath, branchName);
         if (worktreePath) logger.info(`Using worktree for branch "${branchName}": ${worktreePath}`);
       }
@@ -529,6 +550,25 @@ Please continue from where you left off and complete all remaining tasks. Use th
         }
       }
     } finally {
+      if (syncedVpsWorkspace && this.workspaceExecutionService) {
+        try {
+          await this.workspaceExecutionService.syncLocalToRemote(projectPath);
+        } catch (syncError) {
+          const syncErrorInfo = classifyError(syncError);
+          logger.error(
+            `[executeFeature] Feature ${featureId}: failed to sync local changes back to VPS`,
+            syncError
+          );
+          this.eventBus.emitAutoModeEvent('auto_mode_error', {
+            featureId,
+            featureName: feature?.title,
+            branchName: feature?.branchName ?? null,
+            error: `VPS sync upload failed: ${syncErrorInfo.message}`,
+            errorType: syncErrorInfo.type,
+            projectPath,
+          });
+        }
+      }
       this.releaseRunningFeature(featureId);
       if (isAutoMode && projectPath) await this.saveExecutionStateFn(projectPath);
     }

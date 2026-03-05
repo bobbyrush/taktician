@@ -5,8 +5,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { MultiProjectOverview } from '@automaker/types';
-import { createLogger } from '@automaker/utils/logger';
+import type { MultiProjectOverview } from '@taktician/types';
+import { createLogger } from '@taktician/utils/logger';
 import {
   getApiKey,
   getSessionToken,

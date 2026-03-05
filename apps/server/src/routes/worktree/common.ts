@@ -7,7 +7,7 @@ import {
   isValidBranchName,
   isValidRemoteName,
   MAX_BRANCH_NAME_LENGTH,
-} from '@automaker/utils';
+} from '@taktician/utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
@@ -78,7 +78,7 @@ export async function isGhCliAvailable(): Promise<boolean> {
   }
 }
 
-export const AUTOMAKER_INITIAL_COMMIT_MESSAGE = 'chore: automaker initial commit';
+export const TAKTICIAN_INITIAL_COMMIT_MESSAGE = 'chore: taktician initial commit';
 
 /**
  * Normalize path separators to forward slashes for cross-platform consistency.
@@ -148,7 +148,7 @@ export async function ensureInitialCommit(
     return false;
   } catch {
     try {
-      await execAsync(`git commit --allow-empty -m "${AUTOMAKER_INITIAL_COMMIT_MESSAGE}"`, {
+      await execAsync(`git commit --allow-empty -m "${TAKTICIAN_INITIAL_COMMIT_MESSAGE}"`, {
         cwd: repoPath,
         env: { ...process.env, ...env },
       });

@@ -14,11 +14,11 @@
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@automaker/types';
-import { DEFAULT_MAX_CONCURRENCY, DEFAULT_MODELS, stripProviderPrefix } from '@automaker/types';
-import { resolveModelString } from '@automaker/model-resolver';
-import { createLogger, loadContextFiles, classifyError } from '@automaker/utils';
-import { getFeatureDir } from '@automaker/platform';
+import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@taktician/types';
+import { DEFAULT_MAX_CONCURRENCY, DEFAULT_MODELS, stripProviderPrefix } from '@taktician/types';
+import { resolveModelString } from '@taktician/model-resolver';
+import { createLogger, loadContextFiles, classifyError } from '@taktician/utils';
+import { getFeatureDir } from '@taktician/platform';
 import * as secureFs from '../../lib/secure-fs.js';
 import { validateWorkingDirectory, createAutoModeOptions } from '../../lib/sdk-options.js';
 import {
@@ -27,7 +27,7 @@ import {
   getMCPServersFromSettings,
   getDefaultMaxTurnsSetting,
 } from '../../lib/settings-helpers.js';
-import { execGitCommand } from '@automaker/git-utils';
+import { execGitCommand } from '@taktician/git-utils';
 import { TypedEventBus } from '../typed-event-bus.js';
 import { ConcurrencyManager } from '../concurrency-manager.js';
 import { WorktreeResolver } from '../worktree-resolver.js';
@@ -35,6 +35,7 @@ import { FeatureStateManager } from '../feature-state-manager.js';
 import { PlanApprovalService } from '../plan-approval-service.js';
 import { AutoLoopCoordinator, type AutoModeConfig } from '../auto-loop-coordinator.js';
 import { ExecutionService } from '../execution-service.js';
+import { WorkspaceExecutionService } from '../workspace-execution-service.js';
 import { RecoveryService } from '../recovery-service.js';
 import { PipelineOrchestrator } from '../pipeline-orchestrator.js';
 import { AgentExecutor } from '../agent-executor.js';
@@ -226,9 +227,9 @@ export class AutoModeServiceFacade {
 
         // Resolve custom provider (GLM, MiniMax, etc.) for baseUrl and credentials
         let claudeCompatibleProvider:
-          | import('@automaker/types').ClaudeCompatibleProvider
+          | import('@taktician/types').ClaudeCompatibleProvider
           | undefined;
-        let credentials: import('@automaker/types').Credentials | undefined;
+        let credentials: import('@taktician/types').Credentials | undefined;
         if (settingsService) {
           const providerResult = await getProviderByModelId(
             resolvedModel,
@@ -272,7 +273,7 @@ export class AutoModeServiceFacade {
           thinkingLevel: opts?.thinkingLevel,
           maxTurns: userMaxTurns,
           mcpServers: mcpServers as
-            | Record<string, import('@automaker/types').McpServerConfig>
+            | Record<string, import('@taktician/types').McpServerConfig>
             | undefined,
         });
 
@@ -410,6 +411,8 @@ export class AutoModeServiceFacade {
       }
     };
 
+    const workspaceExecutionService = new WorkspaceExecutionService(settingsService);
+
     // ExecutionService - runAgentFn delegates to AgentExecutor via shared helper
     const executionService = new ExecutionService(
       eventBus,
@@ -465,7 +468,8 @@ export class AutoModeServiceFacade {
         );
       },
       (_pPath) => getFacade().saveExecutionState(),
-      loadContextFiles
+      loadContextFiles,
+      workspaceExecutionService
     );
 
     // RecoveryService
@@ -818,7 +822,7 @@ export class AutoModeServiceFacade {
       const feature = await this.featureStateManager.loadFeature(this.projectPath, featureId);
       const title =
         feature?.description?.split('\n')[0]?.substring(0, 60) || `Feature ${featureId}`;
-      const commitMessage = `feat: ${title}\n\nImplemented by Automaker auto-mode`;
+      const commitMessage = `feat: ${title}\n\nImplemented by Taktician auto-mode`;
 
       await execGitCommand(['add', '-A'], workDir);
       await execGitCommand(['commit', '-m', commitMessage], workDir);

@@ -8,7 +8,7 @@
  * - Convert history to Claude SDK message format
  */
 
-import type { ConversationMessage } from '@automaker/types';
+import type { ConversationMessage } from '@taktician/types';
 
 /**
  * Extract plain text from message content (handles both string and array formats)

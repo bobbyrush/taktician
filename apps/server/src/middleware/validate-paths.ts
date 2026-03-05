@@ -5,7 +5,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
-import { validatePath, PathNotAllowedError } from '@automaker/platform';
+import { validatePath, PathNotAllowedError } from '@taktician/platform';
 
 /**
  * Helper to get parameter value from request (checks body first, then query)

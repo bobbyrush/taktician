@@ -17,7 +17,7 @@ import { useAppStore } from '@/store/app-store';
 import { extractSummary } from '@/lib/log-parser';
 import { useAgentOutput } from '@/hooks/queries';
 import type { AutoModeEvent } from '@/types/electron';
-import type { BacklogPlanEvent } from '@automaker/types';
+import type { BacklogPlanEvent } from '@taktician/types';
 
 interface AgentOutputModalProps {
   open: boolean;

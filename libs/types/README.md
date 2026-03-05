@@ -1,15 +1,15 @@
-# @automaker/types
+# @taktician/types
 
-Shared TypeScript type definitions for AutoMaker.
+Shared TypeScript type definitions for Taktician.
 
 ## Overview
 
-This package contains all core type definitions used across AutoMaker's server and UI components. It has no dependencies and serves as the foundation for other packages.
+This package contains all core type definitions used across Taktician's server and UI components. It has no dependencies and serves as the foundation for other packages.
 
 ## Installation
 
 ```bash
-npm install @automaker/types
+npm install @taktician/types
 ```
 
 ## Exports
@@ -35,7 +35,7 @@ import type {
   McpStdioServerConfig,
   McpSSEServerConfig,
   McpHttpServerConfig,
-} from '@automaker/types';
+} from '@taktician/types';
 ```
 
 ### Codex CLI Types
@@ -51,7 +51,7 @@ import type {
   CodexEventType,
   CodexItemType,
   CodexEvent,
-} from '@automaker/types';
+} from '@taktician/types';
 ```
 
 ### Feature Types
@@ -59,7 +59,7 @@ import type {
 Feature management and workflow types.
 
 ```typescript
-import type { Feature, FeatureStatus, PlanningMode, PlanSpec } from '@automaker/types';
+import type { Feature, FeatureStatus, PlanningMode, PlanSpec } from '@taktician/types';
 ```
 
 **Feature Interface:**
@@ -82,7 +82,7 @@ import type {
   SessionListItem,
   CreateSessionParams,
   UpdateSessionParams,
-} from '@automaker/types';
+} from '@taktician/types';
 ```
 
 ### Error Types
@@ -90,7 +90,7 @@ import type {
 Error classification and handling.
 
 ```typescript
-import type { ErrorType, ErrorInfo } from '@automaker/types';
+import type { ErrorType, ErrorInfo } from '@taktician/types';
 ```
 
 ### Image Types
@@ -98,7 +98,7 @@ import type { ErrorType, ErrorInfo } from '@automaker/types';
 Image handling for prompts.
 
 ```typescript
-import type { ImageData, ImageContentBlock } from '@automaker/types';
+import type { ImageData, ImageContentBlock } from '@taktician/types';
 ```
 
 ### Model Types
@@ -106,13 +106,13 @@ import type { ImageData, ImageContentBlock } from '@automaker/types';
 Claude model definitions and mappings.
 
 ```typescript
-import { CLAUDE_MODEL_MAP, DEFAULT_MODELS, type ModelAlias } from '@automaker/types';
+import { CLAUDE_MODEL_MAP, DEFAULT_MODELS, type ModelAlias } from '@taktician/types';
 ```
 
 ## Usage Example
 
 ```typescript
-import type { Feature, ExecuteOptions } from '@automaker/types';
+import type { Feature, ExecuteOptions } from '@taktician/types';
 
 const feature: Feature = {
   id: 'auth-feature',
@@ -133,33 +133,33 @@ const options: ExecuteOptions = {
 
 None - this is a pure types package.
 
-**IMPORTANT**: This package must NEVER depend on other `@automaker/*` packages to prevent circular dependencies. All other packages depend on this one, making it the foundation of the dependency tree.
+**IMPORTANT**: This package must NEVER depend on other `@taktician/*` packages to prevent circular dependencies. All other packages depend on this one, making it the foundation of the dependency tree.
 
 ## Used By
 
-- `@automaker/utils`
-- `@automaker/platform`
-- `@automaker/model-resolver`
-- `@automaker/dependency-resolver`
-- `@automaker/git-utils`
-- `@automaker/server`
-- `@automaker/ui`
+- `@taktician/utils`
+- `@taktician/platform`
+- `@taktician/model-resolver`
+- `@taktician/dependency-resolver`
+- `@taktician/git-utils`
+- `@taktician/server`
+- `@taktician/ui`
 
 ## Circular Dependency Prevention
 
 To maintain the package dependency hierarchy and prevent circular dependencies:
 
-1. **Never add dependencies** to other `@automaker/*` packages in `package.json`
-2. **Keep result types here** - For example, `DependencyResolutionResult` should stay in `@automaker/dependency-resolver`, not be moved here
+1. **Never add dependencies** to other `@taktician/*` packages in `package.json`
+2. **Keep result types here** - For example, `DependencyResolutionResult` should stay in `@taktician/dependency-resolver`, not be moved here
 3. **Import only base types** - Other packages can import from here, but this package cannot import from them
 4. **Document the rule** - When adding new functionality, ensure it follows this constraint
 
 This constraint ensures a clean one-way dependency flow:
 
 ```
-@automaker/types (foundation - no dependencies)
+@taktician/types (foundation - no dependencies)
     ↓
-@automaker/utils, @automaker/platform, etc.
+@taktician/utils, @taktician/platform, etc.
     ↓
-@automaker/server, @automaker/ui
+@taktician/server, @taktician/ui
 ```

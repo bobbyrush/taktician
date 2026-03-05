@@ -68,6 +68,8 @@ export function BoardHeader({
   onViewModeChange,
 }: BoardHeaderProps) {
   const claudeAuthStatus = useSetupStore((state) => state.claudeAuthStatus);
+  const currentProject = useAppStore((state) => state.currentProject);
+  const isVpsWorkspace = currentProject?.workspaceType === 'vps';
   const skipVerificationInAutoMode = useAppStore((state) => state.skipVerificationInAutoMode);
   const setSkipVerificationInAutoMode = useAppStore((state) => state.setSkipVerificationInAutoMode);
   const planUseSelectedWorktreeBranch = useAppStore((state) => state.planUseSelectedWorktreeBranch);
@@ -178,8 +180,8 @@ export function BoardHeader({
           <HeaderMobileMenu
             isOpen={showActionsPanel}
             onToggle={() => setShowActionsPanel(!showActionsPanel)}
-            isWorktreePanelVisible={isWorktreePanelVisible}
-            onWorktreePanelToggle={handleWorktreePanelToggle}
+            isWorktreePanelVisible={isVpsWorkspace ? false : isWorktreePanelVisible}
+            onWorktreePanelToggle={isVpsWorkspace ? () => undefined : handleWorktreePanelToggle}
             maxConcurrency={maxConcurrency}
             runningAgentsCount={runningAgentsCount}
             onConcurrencyChange={onConcurrencyChange}
@@ -197,7 +199,7 @@ export function BoardHeader({
 
         {/* Desktop view: show full controls */}
         {/* Worktrees Toggle - only show after mount to prevent hydration issues */}
-        {isMounted && !isTablet && (
+        {isMounted && !isTablet && !isVpsWorkspace && (
           <div className={controlContainerClass} data-testid="worktrees-toggle-container">
             <GitBranch className="w-4 h-4 text-muted-foreground" />
             <Label

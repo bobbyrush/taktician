@@ -1,11 +1,11 @@
 /**
  * RC Generator - Generate shell configuration files for custom terminal prompts
  *
- * This module generates bash/zsh/sh configuration files that sync with Automaker's themes,
+ * This module generates bash/zsh/sh configuration files that sync with Taktician's themes,
  * providing custom prompts with theme-matched colors while preserving user's existing RC files.
  */
 
-import type { ThemeMode } from '@automaker/types';
+import type { ThemeMode } from '@taktician/types';
 
 /**
  * Terminal configuration options
@@ -73,7 +73,7 @@ const STARTUP_COLOR_SECONDARY = 39;
 const STARTUP_COLOR_ACCENT = 33;
 const DEFAULT_PATH_DEPTH = 0;
 const DEFAULT_PATH_STYLE: TerminalConfig['pathStyle'] = 'full';
-const OMP_THEME_ENV_VAR = 'AUTOMAKER_OMP_THEME';
+const OMP_THEME_ENV_VAR = 'TAKTICIAN_OMP_THEME';
 const OMP_BINARY = 'oh-my-posh';
 const OMP_SHELL_BASH = 'bash';
 const OMP_SHELL_ZSH = 'zsh';
@@ -199,9 +199,9 @@ function generateOhMyPoshInit(
   const themeVar = `$${OMP_THEME_ENV_VAR}`;
   const initCommand = `${OMP_BINARY} init ${shell} --config`;
   return `if [ -n "${themeVar}" ] && command -v ${OMP_BINARY} >/dev/null 2>&1; then
-    automaker_omp_theme="$(automaker_resolve_omp_theme)"
-    if [ -n "$automaker_omp_theme" ]; then
-        eval "$(${initCommand} "$automaker_omp_theme")"
+    taktician_omp_theme="$(taktician_resolve_omp_theme)"
+    if [ -n "$taktician_omp_theme" ]; then
+        eval "$(${initCommand} "$taktician_omp_theme")"
     else
         ${fallback}
     fi
@@ -216,7 +216,7 @@ fi`;
 export function generateCommonFunctions(config: TerminalConfig): string {
   const gitPrompt = config.showGitBranch
     ? `
-automaker_git_prompt() {
+taktician_git_prompt() {
   local branch=""
   local dirty=""
 
@@ -243,57 +243,57 @@ automaker_git_prompt() {
 }
 `
     : `
-automaker_git_prompt() {
+taktician_git_prompt() {
   # Git prompt disabled
   echo -n ""
 }
 `;
 
   return `#!/bin/sh
-# Automaker Terminal Configuration - Common Functions v1.0
+# Taktician Terminal Configuration - Common Functions v1.0
 
 ${gitPrompt}
 
-AUTOMAKER_INFO_UNKNOWN="Unknown"
-AUTOMAKER_BANNER_LABEL_WIDTH=12
-AUTOMAKER_BYTES_PER_KIB=1024
-AUTOMAKER_KIB_PER_MIB=1024
-AUTOMAKER_MIB_PER_GIB=1024
-AUTOMAKER_COLOR_PRIMARY="\\033[38;5;${STARTUP_COLOR_PRIMARY}m"
-AUTOMAKER_COLOR_SECONDARY="\\033[38;5;${STARTUP_COLOR_SECONDARY}m"
-AUTOMAKER_COLOR_ACCENT="\\033[38;5;${STARTUP_COLOR_ACCENT}m"
-AUTOMAKER_COLOR_RESET="\\033[0m"
-AUTOMAKER_SHOW_TIME="${config.showTime === true ? 'true' : 'false'}"
-AUTOMAKER_SHOW_EXIT_STATUS="${config.showExitStatus === true ? 'true' : 'false'}"
-AUTOMAKER_SHOW_USER_HOST="${config.showUserHost === false ? 'false' : 'true'}"
-AUTOMAKER_SHOW_PATH="${config.showPath === false ? 'false' : 'true'}"
-AUTOMAKER_PATH_STYLE="${normalizePathStyle(config.pathStyle)}"
-AUTOMAKER_PATH_DEPTH=${normalizePathDepth(config.pathDepth)}
-automaker_default_themes_dir="\${XDG_DATA_HOME:-\$HOME/.local/share}/oh-my-posh/themes"
+TAKTICIAN_INFO_UNKNOWN="Unknown"
+TAKTICIAN_BANNER_LABEL_WIDTH=12
+TAKTICIAN_BYTES_PER_KIB=1024
+TAKTICIAN_KIB_PER_MIB=1024
+TAKTICIAN_MIB_PER_GIB=1024
+TAKTICIAN_COLOR_PRIMARY="\\033[38;5;${STARTUP_COLOR_PRIMARY}m"
+TAKTICIAN_COLOR_SECONDARY="\\033[38;5;${STARTUP_COLOR_SECONDARY}m"
+TAKTICIAN_COLOR_ACCENT="\\033[38;5;${STARTUP_COLOR_ACCENT}m"
+TAKTICIAN_COLOR_RESET="\\033[0m"
+TAKTICIAN_SHOW_TIME="${config.showTime === true ? 'true' : 'false'}"
+TAKTICIAN_SHOW_EXIT_STATUS="${config.showExitStatus === true ? 'true' : 'false'}"
+TAKTICIAN_SHOW_USER_HOST="${config.showUserHost === false ? 'false' : 'true'}"
+TAKTICIAN_SHOW_PATH="${config.showPath === false ? 'false' : 'true'}"
+TAKTICIAN_PATH_STYLE="${normalizePathStyle(config.pathStyle)}"
+TAKTICIAN_PATH_DEPTH=${normalizePathDepth(config.pathDepth)}
+taktician_default_themes_dir="\${XDG_DATA_HOME:-\$HOME/.local/share}/oh-my-posh/themes"
 if [ -z "$POSH_THEMES_PATH" ] || [ ! -d "$POSH_THEMES_PATH" ]; then
-  POSH_THEMES_PATH="$automaker_default_themes_dir"
+  POSH_THEMES_PATH="$taktician_default_themes_dir"
 fi
 export POSH_THEMES_PATH
 
-automaker_resolve_omp_theme() {
-  automaker_theme_name="$AUTOMAKER_OMP_THEME"
-  if [ -z "$automaker_theme_name" ]; then
+taktician_resolve_omp_theme() {
+  taktician_theme_name="$TAKTICIAN_OMP_THEME"
+  if [ -z "$taktician_theme_name" ]; then
     return 1
   fi
 
-  if [ -f "$automaker_theme_name" ]; then
-    printf '%s' "$automaker_theme_name"
+  if [ -f "$taktician_theme_name" ]; then
+    printf '%s' "$taktician_theme_name"
     return 0
   fi
 
-  automaker_themes_base="\${POSH_THEMES_PATH%/}"
-  if [ -n "$automaker_themes_base" ]; then
-    if [ -f "$automaker_themes_base/$automaker_theme_name.omp.json" ]; then
-      printf '%s' "$automaker_themes_base/$automaker_theme_name.omp.json"
+  taktician_themes_base="\${POSH_THEMES_PATH%/}"
+  if [ -n "$taktician_themes_base" ]; then
+    if [ -f "$taktician_themes_base/$taktician_theme_name.omp.json" ]; then
+      printf '%s' "$taktician_themes_base/$taktician_theme_name.omp.json"
       return 0
     fi
-    if [ -f "$automaker_themes_base/$automaker_theme_name.omp.yaml" ]; then
-      printf '%s' "$automaker_themes_base/$automaker_theme_name.omp.yaml"
+    if [ -f "$taktician_themes_base/$taktician_theme_name.omp.yaml" ]; then
+      printf '%s' "$taktician_themes_base/$taktician_theme_name.omp.yaml"
       return 0
     fi
   fi
@@ -301,11 +301,11 @@ automaker_resolve_omp_theme() {
   return 1
 }
 
-automaker_command_exists() {
+taktician_command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-automaker_get_os() {
+taktician_get_os() {
   if [ -f /etc/os-release ]; then
     . /etc/os-release
     if [ -n "$PRETTY_NAME" ]; then
@@ -318,16 +318,16 @@ automaker_get_os() {
     fi
   fi
 
-  if automaker_command_exists sw_vers; then
+  if taktician_command_exists sw_vers; then
     echo "$(sw_vers -productName) $(sw_vers -productVersion)"
     return
   fi
 
-  uname -s 2>/dev/null || echo "$AUTOMAKER_INFO_UNKNOWN"
+  uname -s 2>/dev/null || echo "$TAKTICIAN_INFO_UNKNOWN"
 }
 
-automaker_get_uptime() {
-  if automaker_command_exists uptime; then
+taktician_get_uptime() {
+  if taktician_command_exists uptime; then
     if uptime -p >/dev/null 2>&1; then
       uptime -p
       return
@@ -336,30 +336,30 @@ automaker_get_uptime() {
     return
   fi
 
-  echo "$AUTOMAKER_INFO_UNKNOWN"
+  echo "$TAKTICIAN_INFO_UNKNOWN"
 }
 
-automaker_get_cpu() {
-  if automaker_command_exists lscpu; then
+taktician_get_cpu() {
+  if taktician_command_exists lscpu; then
     lscpu | sed -n 's/Model name:[[:space:]]*//p' | head -n 1
     return
   fi
 
-  if automaker_command_exists sysctl; then
+  if taktician_command_exists sysctl; then
     sysctl -n machdep.cpu.brand_string 2>/dev/null || sysctl -n hw.model 2>/dev/null
     return
   fi
 
-  uname -m 2>/dev/null || echo "$AUTOMAKER_INFO_UNKNOWN"
+  uname -m 2>/dev/null || echo "$TAKTICIAN_INFO_UNKNOWN"
 }
 
-automaker_get_memory() {
-  if automaker_command_exists free; then
+taktician_get_memory() {
+  if taktician_command_exists free; then
     free -h | awk '/Mem:/ {print $3 " / " $2}'
     return
   fi
 
-  if automaker_command_exists vm_stat; then
+  if taktician_command_exists vm_stat; then
     local page_size
     local pages_free
     local pages_active
@@ -373,9 +373,9 @@ automaker_get_memory() {
     pages_wired=$(vm_stat | awk '/Pages wired down/ {print $4}' | tr -d '.')
     pages_total=$((pages_free + pages_active + pages_inactive + pages_wired))
     awk -v total="$pages_total" -v free="$pages_free" -v size="$page_size" \
-      -v bytes_kib="$AUTOMAKER_BYTES_PER_KIB" \
-      -v kib_mib="$AUTOMAKER_KIB_PER_MIB" \
-      -v mib_gib="$AUTOMAKER_MIB_PER_GIB" \
+      -v bytes_kib="$TAKTICIAN_BYTES_PER_KIB" \
+      -v kib_mib="$TAKTICIAN_KIB_PER_MIB" \
+      -v mib_gib="$TAKTICIAN_MIB_PER_GIB" \
       'BEGIN {
       total_gb = total * size / bytes_kib / kib_mib / mib_gib;
       used_gb = (total - free) * size / bytes_kib / kib_mib / mib_gib;
@@ -384,33 +384,33 @@ automaker_get_memory() {
     return
   fi
 
-  if automaker_command_exists sysctl; then
+  if taktician_command_exists sysctl; then
     local total_bytes
     total_bytes=$(sysctl -n hw.memsize 2>/dev/null)
     if [ -n "$total_bytes" ]; then
       awk -v total="$total_bytes" \
-        -v bytes_kib="$AUTOMAKER_BYTES_PER_KIB" \
-        -v kib_mib="$AUTOMAKER_KIB_PER_MIB" \
-        -v mib_gib="$AUTOMAKER_MIB_PER_GIB" \
+        -v bytes_kib="$TAKTICIAN_BYTES_PER_KIB" \
+        -v kib_mib="$TAKTICIAN_KIB_PER_MIB" \
+        -v mib_gib="$TAKTICIAN_MIB_PER_GIB" \
         'BEGIN {printf("%.1f GB", total / bytes_kib / kib_mib / mib_gib)}'
       return
     fi
   fi
 
-  echo "$AUTOMAKER_INFO_UNKNOWN"
+  echo "$TAKTICIAN_INFO_UNKNOWN"
 }
 
-automaker_get_disk() {
-  if automaker_command_exists df; then
+taktician_get_disk() {
+  if taktician_command_exists df; then
     df -h / 2>/dev/null | awk 'NR==2 {print $3 " / " $2}'
     return
   fi
 
-  echo "$AUTOMAKER_INFO_UNKNOWN"
+  echo "$TAKTICIAN_INFO_UNKNOWN"
 }
 
-automaker_get_ip() {
-  if automaker_command_exists hostname; then
+taktician_get_ip() {
+  if taktician_command_exists hostname; then
     local ip_addr
     ip_addr=$(hostname -I 2>/dev/null | awk '{print $1}')
     if [ -n "$ip_addr" ]; then
@@ -419,7 +419,7 @@ automaker_get_ip() {
     fi
   fi
 
-  if automaker_command_exists ipconfig; then
+  if taktician_command_exists ipconfig; then
     local ip_addr
     ip_addr=$(ipconfig getifaddr en0 2>/dev/null)
     if [ -n "$ip_addr" ]; then
@@ -428,10 +428,10 @@ automaker_get_ip() {
     fi
   fi
 
-  echo "$AUTOMAKER_INFO_UNKNOWN"
+  echo "$TAKTICIAN_INFO_UNKNOWN"
 }
 
-automaker_trim_path_depth() {
+taktician_trim_path_depth() {
   local path="$1"
   local depth="$2"
   if [ -z "$depth" ] || [ "$depth" -le 0 ]; then
@@ -467,7 +467,7 @@ automaker_trim_path_depth() {
   }'
 }
 
-automaker_shorten_path() {
+taktician_shorten_path() {
   local path="$1"
   echo "$path" | awk -F/ '{
     prefix=""
@@ -493,8 +493,8 @@ automaker_shorten_path() {
   }'
 }
 
-automaker_prompt_path() {
-  if [ "$AUTOMAKER_SHOW_PATH" != "true" ]; then
+taktician_prompt_path() {
+  if [ "$TAKTICIAN_SHOW_PATH" != "true" ]; then
     return
   fi
 
@@ -503,11 +503,11 @@ automaker_prompt_path() {
     current_path="~\${current_path#$HOME}"
   fi
 
-  if [ "$AUTOMAKER_PATH_DEPTH" -gt 0 ]; then
-    current_path=$(automaker_trim_path_depth "$current_path" "$AUTOMAKER_PATH_DEPTH")
+  if [ "$TAKTICIAN_PATH_DEPTH" -gt 0 ]; then
+    current_path=$(taktician_trim_path_depth "$current_path" "$TAKTICIAN_PATH_DEPTH")
   fi
 
-  case "$AUTOMAKER_PATH_STYLE" in
+  case "$TAKTICIAN_PATH_STYLE" in
     basename)
       if [ "$current_path" = "/" ] || [ "$current_path" = "~" ]; then
         echo -n "$current_path"
@@ -516,7 +516,7 @@ automaker_prompt_path() {
       fi
       ;;
     short)
-      echo -n "$(automaker_shorten_path "$current_path")"
+      echo -n "$(taktician_shorten_path "$current_path")"
       ;;
     full|*)
       echo -n "$current_path"
@@ -524,37 +524,37 @@ automaker_prompt_path() {
   esac
 }
 
-automaker_prompt_time() {
-  if [ "$AUTOMAKER_SHOW_TIME" != "true" ]; then
+taktician_prompt_time() {
+  if [ "$TAKTICIAN_SHOW_TIME" != "true" ]; then
     return
   fi
 
   date +%H:%M
 }
 
-automaker_prompt_status() {
-  automaker_last_status=$?
-  if [ "$AUTOMAKER_SHOW_EXIT_STATUS" != "true" ]; then
+taktician_prompt_status() {
+  taktician_last_status=$?
+  if [ "$TAKTICIAN_SHOW_EXIT_STATUS" != "true" ]; then
     return
   fi
 
-  if [ "$automaker_last_status" -eq 0 ]; then
+  if [ "$taktician_last_status" -eq 0 ]; then
     return
   fi
 
-  printf "✗ %s" "$automaker_last_status"
+  printf "✗ %s" "$taktician_last_status"
 }
 
-automaker_show_banner() {
-  local label_width="$AUTOMAKER_BANNER_LABEL_WIDTH"
+taktician_show_banner() {
+  local label_width="$TAKTICIAN_BANNER_LABEL_WIDTH"
   local logo_line_1="  █▀▀█ █  █ ▀▀█▀▀ █▀▀█ █▀▄▀█ █▀▀█ █ █ █▀▀ █▀▀█  "
   local logo_line_2="  █▄▄█ █  █   █   █  █ █ ▀ █ █▄▄█ █▀▄ █▀▀ █▄▄▀  "
   local logo_line_3="  ▀  ▀  ▀▀▀   ▀   ▀▀▀▀ ▀   ▀ ▀  ▀ ▀ ▀ ▀▀▀ ▀ ▀▀  "
-  local accent_color="\${AUTOMAKER_COLOR_PRIMARY}"
-  local secondary_color="\${AUTOMAKER_COLOR_SECONDARY}"
-  local tertiary_color="\${AUTOMAKER_COLOR_ACCENT}"
-  local label_color="\${AUTOMAKER_COLOR_SECONDARY}"
-  local reset_color="\${AUTOMAKER_COLOR_RESET}"
+  local accent_color="\${TAKTICIAN_COLOR_PRIMARY}"
+  local secondary_color="\${TAKTICIAN_COLOR_SECONDARY}"
+  local tertiary_color="\${TAKTICIAN_COLOR_ACCENT}"
+  local label_color="\${TAKTICIAN_COLOR_SECONDARY}"
+  local reset_color="\${TAKTICIAN_COLOR_RESET}"
 
   printf "%b%s%b\n" "$accent_color" "$logo_line_1" "$reset_color"
   printf "%b%s%b\n" "$secondary_color" "$logo_line_2" "$reset_color"
@@ -568,29 +568,29 @@ automaker_show_banner() {
   local user_host="\${USER:-unknown}@$(hostname 2>/dev/null || echo unknown)"
   printf "%b%s%b\n" "$label_color" "$user_host" "$reset_color"
 
-  printf "%b%-\${label_width}s%b %s\n" "$label_color" "OS:" "$reset_color" "$(automaker_get_os)"
-  printf "%b%-\${label_width}s%b %s\n" "$label_color" "Uptime:" "$reset_color" "$(automaker_get_uptime)"
+  printf "%b%-\${label_width}s%b %s\n" "$label_color" "OS:" "$reset_color" "$(taktician_get_os)"
+  printf "%b%-\${label_width}s%b %s\n" "$label_color" "Uptime:" "$reset_color" "$(taktician_get_uptime)"
   printf "%b%-\${label_width}s%b %s\n" "$label_color" "Shell:" "$reset_color" "$shell_name"
   printf "%b%-\${label_width}s%b %s\n" "$label_color" "Terminal:" "$reset_color" "\${TERM_PROGRAM:-$TERM}"
-  printf "%b%-\${label_width}s%b %s\n" "$label_color" "CPU:" "$reset_color" "$(automaker_get_cpu)"
-  printf "%b%-\${label_width}s%b %s\n" "$label_color" "Memory:" "$reset_color" "$(automaker_get_memory)"
-  printf "%b%-\${label_width}s%b %s\n" "$label_color" "Disk:" "$reset_color" "$(automaker_get_disk)"
-  printf "%b%-\${label_width}s%b %s\n" "$label_color" "Local IP:" "$reset_color" "$(automaker_get_ip)"
+  printf "%b%-\${label_width}s%b %s\n" "$label_color" "CPU:" "$reset_color" "$(taktician_get_cpu)"
+  printf "%b%-\${label_width}s%b %s\n" "$label_color" "Memory:" "$reset_color" "$(taktician_get_memory)"
+  printf "%b%-\${label_width}s%b %s\n" "$label_color" "Disk:" "$reset_color" "$(taktician_get_disk)"
+  printf "%b%-\${label_width}s%b %s\n" "$label_color" "Local IP:" "$reset_color" "$(taktician_get_ip)"
   printf "\n"
 }
 
-automaker_show_banner_once() {
+taktician_show_banner_once() {
   case "$-" in
     *i*) ;;
     *) return ;;
   esac
 
-  if [ "$AUTOMAKER_BANNER_SHOWN" = "true" ]; then
+  if [ "$TAKTICIAN_BANNER_SHOWN" = "true" ]; then
     return
   fi
 
-  automaker_show_banner
-  export AUTOMAKER_BANNER_SHOWN="true"
+  taktician_show_banner
+  export TAKTICIAN_BANNER_SHOWN="true"
 }
 `;
 }
@@ -607,16 +607,16 @@ function generatePrompt(
     ? `${colors.user}\\u${colors.reset}@${colors.host}\\h${colors.reset}`
     : '';
   const pathSegment = config.showPath
-    ? `${colors.path}\\$(automaker_prompt_path)${colors.reset}`
+    ? `${colors.path}\\$(taktician_prompt_path)${colors.reset}`
     : '';
   const gitSegment = config.showGitBranch
-    ? `${colors.gitBranch}\\$(automaker_git_prompt)${colors.reset}`
+    ? `${colors.gitBranch}\\$(taktician_git_prompt)${colors.reset}`
     : '';
   const timeSegment = config.showTime
-    ? `${colors.gitBranch}[\\$(automaker_prompt_time)]${colors.reset}`
+    ? `${colors.gitBranch}[\\$(taktician_prompt_time)]${colors.reset}`
     : '';
   const statusSegment = config.showExitStatus
-    ? `${colors.gitDirty}\\$(automaker_prompt_status)${colors.reset}`
+    ? `${colors.gitDirty}\\$(taktician_prompt_status)${colors.reset}`
     : '';
 
   switch (format) {
@@ -721,16 +721,16 @@ function generateZshPrompt(
     ? `[${zshColors.user}%n${zshColors.reset}@${zshColors.host}%m${zshColors.reset}]`
     : '';
   const pathSegment = config.showPath
-    ? `${zshColors.path}$(automaker_prompt_path)${zshColors.reset}`
+    ? `${zshColors.path}$(taktician_prompt_path)${zshColors.reset}`
     : '';
   const gitSegment = config.showGitBranch
-    ? `${zshColors.gitBranch}$(automaker_git_prompt)${zshColors.reset}`
+    ? `${zshColors.gitBranch}$(taktician_git_prompt)${zshColors.reset}`
     : '';
   const timeSegment = config.showTime
-    ? `${zshColors.gitBranch}[$(automaker_prompt_time)]${zshColors.reset}`
+    ? `${zshColors.gitBranch}[$(taktician_prompt_time)]${zshColors.reset}`
     : '';
   const statusSegment = config.showExitStatus
-    ? `${zshColors.gitDirty}$(automaker_prompt_status)${zshColors.reset}`
+    ? `${zshColors.gitDirty}$(taktician_prompt_status)${zshColors.reset}`
     : '';
   const segments = [timeSegment, userHostSegment, pathSegment, gitSegment, statusSegment].filter(
     (segment) => segment.length > 0
@@ -838,7 +838,7 @@ export function generateBashrc(theme: TerminalTheme, config: TerminalConfig): st
   const promptInitializer = generateOhMyPoshInit(OMP_SHELL_BASH, promptLine);
 
   return `#!/bin/bash
-# Automaker Terminal Configuration v1.0
+# Taktician Terminal Configuration v1.0
 # This file is automatically generated - manual edits will be overwritten
 
 # Source user's original bashrc first (preserves user configuration)
@@ -846,10 +846,10 @@ if [ -f "$HOME/.bashrc" ]; then
     source "$HOME/.bashrc"
 fi
 
-# Load Automaker theme colors
-AUTOMAKER_THEME="\${AUTOMAKER_THEME:-dark}"
-if [ -f "\${BASH_SOURCE%/*}/themes/$AUTOMAKER_THEME.sh" ]; then
-    source "\${BASH_SOURCE%/*}/themes/$AUTOMAKER_THEME.sh"
+# Load Taktician theme colors
+TAKTICIAN_THEME="\${TAKTICIAN_THEME:-dark}"
+if [ -f "\${BASH_SOURCE%/*}/themes/$TAKTICIAN_THEME.sh" ]; then
+    source "\${BASH_SOURCE%/*}/themes/$TAKTICIAN_THEME.sh"
 fi
 
 # Load common functions (git prompt)
@@ -857,13 +857,13 @@ if [ -f "\${BASH_SOURCE%/*}/common.sh" ]; then
     source "\${BASH_SOURCE%/*}/common.sh"
 fi
 
-# Show Automaker banner on shell start
-if command -v automaker_show_banner_once >/dev/null 2>&1; then
-    automaker_show_banner_once
+# Show Taktician banner on shell start
+if command -v taktician_show_banner_once >/dev/null 2>&1; then
+    taktician_show_banner_once
 fi
 
 # Set custom prompt (only if enabled)
-if [ "$AUTOMAKER_CUSTOM_PROMPT" = "true" ]; then
+if [ "$TAKTICIAN_CUSTOM_PROMPT" = "true" ]; then
     ${promptInitializer}
 fi
 ${generateAliases(config)}${generateEnvVars(config)}
@@ -883,7 +883,7 @@ export function generateZshrc(theme: TerminalTheme, config: TerminalConfig): str
   const promptInitializer = generateOhMyPoshInit(OMP_SHELL_ZSH, promptLine);
 
   return `#!/bin/zsh
-# Automaker Terminal Configuration v1.0
+# Taktician Terminal Configuration v1.0
 # This file is automatically generated - manual edits will be overwritten
 
 # Source user's original zshrc first (preserves user configuration)
@@ -891,10 +891,10 @@ if [ -f "$HOME/.zshrc" ]; then
     source "$HOME/.zshrc"
 fi
 
-# Load Automaker theme colors
-AUTOMAKER_THEME="\${AUTOMAKER_THEME:-dark}"
-if [ -f "\${ZDOTDIR:-\${0:a:h}}/themes/$AUTOMAKER_THEME.sh" ]; then
-    source "\${ZDOTDIR:-\${0:a:h}}/themes/$AUTOMAKER_THEME.sh"
+# Load Taktician theme colors
+TAKTICIAN_THEME="\${TAKTICIAN_THEME:-dark}"
+if [ -f "\${ZDOTDIR:-\${0:a:h}}/themes/$TAKTICIAN_THEME.sh" ]; then
+    source "\${ZDOTDIR:-\${0:a:h}}/themes/$TAKTICIAN_THEME.sh"
 fi
 
 # Load common functions (git prompt)
@@ -905,13 +905,13 @@ fi
 # Enable command substitution in PROMPT
 setopt PROMPT_SUBST
 
-# Show Automaker banner on shell start
-if command -v automaker_show_banner_once >/dev/null 2>&1; then
-    automaker_show_banner_once
+# Show Taktician banner on shell start
+if command -v taktician_show_banner_once >/dev/null 2>&1; then
+    taktician_show_banner_once
 fi
 
 # Set custom prompt (only if enabled)
-if [ "$AUTOMAKER_CUSTOM_PROMPT" = "true" ]; then
+if [ "$TAKTICIAN_CUSTOM_PROMPT" = "true" ]; then
     ${promptInitializer}
 fi
 ${generateAliases(config)}${generateEnvVars(config)}
@@ -938,7 +938,7 @@ export function generateThemeColors(theme: TerminalTheme): string {
   };
 
   return `#!/bin/sh
-# Automaker Theme Colors
+# Taktician Theme Colors
 # This file is automatically generated - manual edits will be overwritten
 
 # ANSI color codes for prompt

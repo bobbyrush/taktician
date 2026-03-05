@@ -6,7 +6,7 @@
 import path from 'path';
 import * as secureFs from '../lib/secure-fs.js';
 import type { EventEmitter } from '../lib/events.js';
-import type { Feature, ExecuteOptions } from '@automaker/types';
+import type { Feature, ExecuteOptions } from '@taktician/types';
 import type {
   Idea,
   IdeaCategory,
@@ -24,8 +24,8 @@ import type {
   PromptCategory,
   IdeationPrompt,
   IdeationContextSources,
-} from '@automaker/types';
-import { DEFAULT_IDEATION_CONTEXT_SOURCES } from '@automaker/types';
+} from '@taktician/types';
+import { DEFAULT_IDEATION_CONTEXT_SOURCES } from '@taktician/types';
 import {
   getIdeasDir,
   getIdeaDir,
@@ -35,15 +35,15 @@ import {
   getIdeationAnalysisPath,
   getAppSpecPath,
   ensureIdeationDir,
-} from '@automaker/platform';
+} from '@taktician/platform';
 import { extractXmlElements, extractImplementedFeatures } from '../lib/xml-extractor.js';
-import { createLogger, loadContextFiles, isAbortError } from '@automaker/utils';
+import { createLogger, loadContextFiles, isAbortError } from '@taktician/utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import type { SettingsService } from './settings-service.js';
 import type { FeatureLoader } from './feature-loader.js';
 import { createChatOptions, validateWorkingDirectory } from '../lib/sdk-options.js';
-import { resolveModelString, resolvePhaseModel } from '@automaker/model-resolver';
-import { stripProviderPrefix } from '@automaker/types';
+import { resolveModelString, resolvePhaseModel } from '@taktician/model-resolver';
+import { stripProviderPrefix } from '@taktician/types';
 import {
   getPromptCustomization,
   getProviderByModelId,
@@ -218,7 +218,7 @@ export class IdeationService {
       let modelId = resolveModelString(options?.model ?? 'sonnet');
 
       // Try to find a provider for this model (e.g., GLM, MiniMax models)
-      let claudeCompatibleProvider: import('@automaker/types').ClaudeCompatibleProvider | undefined;
+      let claudeCompatibleProvider: import('@taktician/types').ClaudeCompatibleProvider | undefined;
       let credentials = await this.settingsService?.getCredentials();
 
       if (this.settingsService && options?.model) {

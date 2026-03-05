@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Cross-platform launcher for Automaker
+ * Cross-platform launcher for Taktician
  * Works on Windows (CMD, PowerShell, Git Bash) and Unix (macOS, Linux)
  */
 
@@ -128,10 +128,10 @@ function findBashOnWindows() {
  * Run the bash script
  */
 function runBashScript() {
-  const scriptPath = join(__dirname, 'start-automaker.sh');
+  const scriptPath = join(__dirname, 'start-taktician.sh');
 
   if (!existsSync(scriptPath)) {
-    console.error('Error: start-automaker.sh not found');
+    console.error('Error: start-taktician.sh not found');
     process.exit(1);
   }
 
@@ -175,7 +175,7 @@ function runBashScript() {
       console.error(`Error: Could not find bash at "${bashCmd}"`);
       console.error('Please ensure Git Bash or another bash shell is installed.');
     } else {
-      console.error('Error launching Automaker:', err.message);
+      console.error('Error launching Taktician:', err.message);
     }
     process.exit(1);
   });

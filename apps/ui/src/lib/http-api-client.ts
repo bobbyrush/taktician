@@ -5,7 +5,7 @@
  * but communicates with the backend server via HTTP/WebSocket.
  */
 
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import type {
   ElectronAPI,
   FileResult,
@@ -39,7 +39,7 @@ import type {
   IdeationStreamEvent,
   IdeationAnalysisEvent,
   Notification,
-} from '@automaker/types';
+} from '@taktician/types';
 import type { Message, SessionListItem } from '@/types/electron';
 import type {
   ClaudeUsageResponse,
@@ -48,7 +48,7 @@ import type {
   ZaiUsageResponse,
 } from '@/store/app-store';
 import type { WorktreeAPI, GitAPI, ModelDefinition, ProviderStatus } from '@/types/electron';
-import type { ModelId, ThinkingLevel, ReasoningEffort, Feature } from '@automaker/types';
+import type { ModelId, ThinkingLevel, ReasoningEffort, Feature } from '@taktician/types';
 import { getGlobalFileBrowser } from '@/contexts/file-browser-context';
 
 const logger = createLogger('HttpClient');
@@ -64,7 +64,7 @@ let cachedServerUrl: string | null = null;
 const notifyLoggedOut = (): void => {
   if (typeof window === 'undefined') return;
   try {
-    window.dispatchEvent(new CustomEvent('automaker:logged-out'));
+    window.dispatchEvent(new CustomEvent('taktician:logged-out'));
   } catch {
     // Ignore - navigation will still be handled by failed requests in most cases
   }
@@ -95,7 +95,7 @@ const handleUnauthorized = (): void => {
 const notifyServerOffline = (): void => {
   if (typeof window === 'undefined') return;
   try {
-    window.dispatchEvent(new CustomEvent('automaker:server-offline'));
+    window.dispatchEvent(new CustomEvent('taktician:server-offline'));
   } catch {
     // Ignore
   }
@@ -188,7 +188,7 @@ let apiKeyInitPromise: Promise<void> | null = null;
 // Cached session token for authentication (Web mode - explicit header auth)
 // Persisted to localStorage to survive page reloads
 let cachedSessionToken: string | null = null;
-const SESSION_TOKEN_KEY = 'automaker:sessionToken';
+const SESSION_TOKEN_KEY = 'taktician:sessionToken';
 
 // Initialize cached session token from localStorage on module load
 // This ensures web mode survives page reloads with valid authentication
@@ -2523,6 +2523,55 @@ export class HttpApiClient implements ElectronAPI {
       directories?: Array<{ name: string; path: string }>;
       error?: string;
     }> => this.get('/api/workspace/directories'),
+
+    listVpsProjects: (): Promise<{
+      success: boolean;
+      projects?: Array<{
+        id: string;
+        name: string;
+        path: string;
+        lastOpened?: string;
+        workspaceType?: 'local' | 'vps';
+        vpsProfileId?: string;
+        remotePath?: string;
+      }>;
+      error?: string;
+    }> => this.get('/api/workspace/vps-projects'),
+
+    createVpsProject: (payload: {
+      name: string;
+      vpsProfileId: string;
+      remotePath: string;
+    }): Promise<{
+      success: boolean;
+      project?: {
+        id: string;
+        name: string;
+        path: string;
+        lastOpened?: string;
+        workspaceType?: 'local' | 'vps';
+        vpsProfileId?: string;
+        remotePath?: string;
+      };
+      created?: boolean;
+      error?: string;
+    }> => this.post('/api/workspace/vps-projects', payload),
+
+    purgeLocalProjects: (): Promise<{
+      success: boolean;
+      removedCount?: number;
+      projects?: Array<{
+        id: string;
+        name: string;
+        path: string;
+        lastOpened?: string;
+        workspaceType?: 'local' | 'vps';
+        vpsProfileId?: string;
+        remotePath?: string;
+      }>;
+      currentProjectId?: string | null;
+      error?: string;
+    }> => this.post('/api/workspace/purge-local-projects', {}),
   };
 
   // Agent API
@@ -2768,11 +2817,11 @@ export class HttpApiClient implements ElectronAPI {
 
     // Migration from localStorage
     migrate: (data: {
-      'automaker-storage'?: string;
-      'automaker-setup'?: string;
+      'taktician-storage'?: string;
+      'taktician-setup'?: string;
       'worktree-panel-collapsed'?: string;
       'file-browser-recent-folders'?: string;
-      'automaker:lastProjectDir'?: string;
+      'taktician:lastProjectDir'?: string;
     }): Promise<{
       success: boolean;
       migratedGlobalSettings: boolean;

@@ -3,8 +3,8 @@ import { getMCPServersFromSettings } from '@/lib/settings-helpers.js';
 import type { SettingsService } from '@/services/settings-service.js';
 
 // Mock the logger
-vi.mock('@automaker/utils', async () => {
-  const actual = await vi.importActual('@automaker/utils');
+vi.mock('@taktician/utils', async () => {
+  const actual = await vi.importActual('@taktician/utils');
   const mockLogger = {
     info: vi.fn(),
     error: vi.fn(),

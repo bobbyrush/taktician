@@ -8,10 +8,10 @@ import type {
   PipelineStep,
   PipelineConfig,
   FeatureStatusWithPipeline,
-} from '@automaker/types';
-import { createLogger, loadContextFiles, classifyError } from '@automaker/utils';
-import { getFeatureDir } from '@automaker/platform';
-import { resolveModelString, DEFAULT_MODELS } from '@automaker/model-resolver';
+} from '@taktician/types';
+import { createLogger, loadContextFiles, classifyError } from '@taktician/utils';
+import { getFeatureDir } from '@taktician/platform';
+import { resolveModelString, DEFAULT_MODELS } from '@taktician/model-resolver';
 import * as secureFs from '../lib/secure-fs.js';
 import {
   getPromptCustomization,

@@ -6,8 +6,8 @@
  */
 
 import type { Request, Response } from 'express';
-import { createLogger } from '@automaker/utils';
-import { CLAUDE_MODEL_MAP } from '@automaker/model-resolver';
+import { createLogger } from '@taktician/utils';
+import { CLAUDE_MODEL_MAP } from '@taktician/model-resolver';
 import { simpleQuery } from '../../../providers/simple-query-service.js';
 import type { SettingsService } from '../../../services/settings-service.js';
 import { getPromptCustomization } from '../../../lib/settings-helpers.js';

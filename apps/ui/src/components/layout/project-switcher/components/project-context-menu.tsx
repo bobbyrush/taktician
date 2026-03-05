@@ -202,7 +202,7 @@ export function ProjectContextMenu({
     setPreviewTheme,
   } = useAppStore();
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  const [showRemoveFromAutomakerDialog, setShowRemoveFromAutomakerDialog] = useState(false);
+  const [showRemoveFromTakticianDialog, setShowRemoveFromTakticianDialog] = useState(false);
   const [showThemeSubmenu, setShowThemeSubmenu] = useState(false);
   const themeSubmenuRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -284,7 +284,7 @@ export function ProjectContextMenu({
   useEffect(() => {
     const handleClickOutside = (event: globalThis.MouseEvent) => {
       // Don't close if a confirmation dialog is open (dialog is in a portal)
-      if (showRemoveDialog || showRemoveFromAutomakerDialog) return;
+      if (showRemoveDialog || showRemoveFromTakticianDialog) return;
 
       if (menuRef.current && !menuRef.current.contains(event.target as globalThis.Node)) {
         setPreviewTheme(null);
@@ -294,7 +294,7 @@ export function ProjectContextMenu({
 
     const handleEscape = (event: globalThis.KeyboardEvent) => {
       // Don't close if a confirmation dialog is open (let the dialog handle escape)
-      if (showRemoveDialog || showRemoveFromAutomakerDialog) return;
+      if (showRemoveDialog || showRemoveFromTakticianDialog) return;
 
       if (event.key === 'Escape') {
         setPreviewTheme(null);
@@ -309,7 +309,7 @@ export function ProjectContextMenu({
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [onClose, setPreviewTheme, showRemoveDialog, showRemoveFromAutomakerDialog]);
+  }, [onClose, setPreviewTheme, showRemoveDialog, showRemoveFromTakticianDialog]);
 
   const handleEdit = () => {
     onEdit(project);
@@ -361,20 +361,20 @@ export function ProjectContextMenu({
     [onClose]
   );
 
-  const handleRemoveFromAutomaker = () => {
-    setShowRemoveFromAutomakerDialog(true);
+  const handleRemoveFromTaktician = () => {
+    setShowRemoveFromTakticianDialog(true);
   };
 
-  const handleConfirmRemoveFromAutomaker = useCallback(() => {
+  const handleConfirmRemoveFromTaktician = useCallback(() => {
     removeProject(project.id);
-    toast.success('Project removed from Automaker', {
+    toast.success('Project removed from Taktician', {
       description: `${project.name} has been removed. The folder remains on disk.`,
     });
   }, [removeProject, project.id, project.name]);
 
-  const handleRemoveFromAutomakerDialogClose = useCallback(
+  const handleRemoveFromTakticianDialogClose = useCallback(
     (isOpen: boolean) => {
-      setShowRemoveFromAutomakerDialog(isOpen);
+      setShowRemoveFromTakticianDialog(isOpen);
       if (!isOpen) {
         onClose();
       }
@@ -385,7 +385,7 @@ export function ProjectContextMenu({
   return (
     <>
       {/* Hide context menu when confirm dialog is open */}
-      {!showRemoveDialog && !showRemoveFromAutomakerDialog && (
+      {!showRemoveDialog && !showRemoveFromTakticianDialog && (
         <div
           ref={menuRef}
           className={cn(
@@ -536,7 +536,7 @@ export function ProjectContextMenu({
             </button>
 
             <button
-              onClick={handleRemoveFromAutomaker}
+              onClick={handleRemoveFromTaktician}
               className={cn(
                 'w-full flex items-center gap-2 px-3 py-2 rounded-md',
                 'text-sm font-medium text-left',
@@ -544,10 +544,10 @@ export function ProjectContextMenu({
                 'transition-colors',
                 'focus:outline-none focus:bg-accent'
               )}
-              data-testid="remove-from-automaker-button"
+              data-testid="remove-from-taktician-button"
             >
               <LogOut className="w-4 h-4" />
-              <span>Remove from Automaker</span>
+              <span>Remove from Taktician</span>
             </button>
           </div>
         </div>
@@ -566,14 +566,14 @@ export function ProjectContextMenu({
       />
 
       <ConfirmDialog
-        open={showRemoveFromAutomakerDialog}
-        onOpenChange={handleRemoveFromAutomakerDialogClose}
-        onConfirm={handleConfirmRemoveFromAutomaker}
-        title="Remove from Automaker"
-        description={`Remove "${project.name}" from Automaker? The folder will remain on disk and can be re-added later by opening it.`}
+        open={showRemoveFromTakticianDialog}
+        onOpenChange={handleRemoveFromTakticianDialogClose}
+        onConfirm={handleConfirmRemoveFromTaktician}
+        title="Remove from Taktician"
+        description={`Remove "${project.name}" from Taktician? The folder will remain on disk and can be re-added later by opening it.`}
         icon={LogOut}
         iconClassName="text-muted-foreground"
-        confirmText="Remove from Automaker"
+        confirmText="Remove from Taktician"
         confirmVariant="secondary"
       />
     </>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import {
   Dialog,
   DialogContent,

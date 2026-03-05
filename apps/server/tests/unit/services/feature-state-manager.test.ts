@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import path from 'path';
 import { FeatureStateManager } from '@/services/feature-state-manager.js';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@taktician/types';
 import type { EventEmitter } from '@/lib/events.js';
 import type { FeatureLoader } from '@/services/feature-loader.js';
 import * as secureFs from '@/lib/secure-fs.js';
-import { atomicWriteJson, readJsonWithRecovery } from '@automaker/utils';
-import { getFeatureDir, getFeaturesDir } from '@automaker/platform';
+import { atomicWriteJson, readJsonWithRecovery } from '@taktician/utils';
+import { getFeatureDir, getFeaturesDir } from '@taktician/platform';
 import { getNotificationService } from '@/services/notification-service.js';
 
 /**
@@ -21,8 +21,8 @@ vi.mock('@/lib/secure-fs.js', () => ({
   readdir: vi.fn(),
 }));
 
-vi.mock('@automaker/utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@automaker/utils')>();
+vi.mock('@taktician/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@taktician/utils')>();
   return {
     ...actual,
     atomicWriteJson: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock('@automaker/utils', async (importOriginal) => {
   };
 });
 
-vi.mock('@automaker/platform', () => ({
+vi.mock('@taktician/platform', () => ({
   getFeatureDir: vi.fn(),
   getFeaturesDir: vi.fn(),
 }));
@@ -72,8 +72,8 @@ describe('FeatureStateManager', () => {
     manager = new FeatureStateManager(mockEvents, mockFeatureLoader);
 
     // Default mocks
-    (getFeatureDir as Mock).mockReturnValue('/project/.automaker/features/feature-123');
-    (getFeaturesDir as Mock).mockReturnValue('/project/.automaker/features');
+    (getFeatureDir as Mock).mockReturnValue('/project/.taktician/features/feature-123');
+    (getFeaturesDir as Mock).mockReturnValue('/project/.taktician/features');
   });
 
   describe('loadFeature', () => {
@@ -85,7 +85,7 @@ describe('FeatureStateManager', () => {
       expect(feature).toEqual(mockFeature);
       expect(getFeatureDir).toHaveBeenCalledWith('/project', 'feature-123');
       expect(readJsonWithRecovery).toHaveBeenCalledWith(
-        normalizePath('/project/.automaker/features/feature-123/feature.json'),
+        normalizePath('/project/.taktician/features/feature-123/feature.json'),
         null,
         expect.objectContaining({ autoRestore: true })
       );

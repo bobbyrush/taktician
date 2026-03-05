@@ -182,7 +182,7 @@ interface PersistedFileEditorState {
   markdownViewMode: MarkdownViewMode;
 }
 
-const STORE_NAME = 'automaker-file-editor';
+const STORE_NAME = 'taktician-file-editor';
 
 export const useFileEditorStore = create<FileEditorState>()(
   persist(

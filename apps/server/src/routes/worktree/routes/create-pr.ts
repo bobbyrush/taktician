@@ -13,10 +13,10 @@ import {
   isGhCliAvailable,
 } from '../common.js';
 import { execGitCommand } from '../../../lib/git.js';
-import { spawnProcess } from '@automaker/platform';
+import { spawnProcess } from '@taktician/platform';
 import { updateWorktreePRInfo } from '../../../lib/worktree-metadata.js';
-import { createLogger } from '@automaker/utils';
-import { validatePRState } from '@automaker/types';
+import { createLogger } from '@taktician/utils';
+import { validatePRState } from '@taktician/types';
 import { resolvePrTarget } from '../../../services/pr-service.js';
 
 const logger = createLogger('CreatePR');
@@ -56,7 +56,7 @@ export function createCreatePRHandler() {
       }
 
       // Use projectPath if provided, otherwise derive from worktreePath
-      // For worktrees, projectPath is needed to store metadata in the main project's .automaker folder
+      // For worktrees, projectPath is needed to store metadata in the main project's .taktician folder
       const effectiveProjectPath = projectPath || worktreePath;
 
       // Get current branch name

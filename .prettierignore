@@ -9,8 +9,8 @@ out/
 .turbo/
 release/
 
-# Automaker
-.automaker/
+# Taktician
+.taktician/
 
 # Logs
 logs/

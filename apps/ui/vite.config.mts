@@ -45,7 +45,7 @@ const buildHash = getBuildHash();
  */
 function swCacheBuster(): Plugin {
   // Single constant for the cache name prefix — bump this when changing the SW cache version.
-  const CACHE_NAME_BASE = 'automaker-v5';
+  const CACHE_NAME_BASE = 'taktician-v5';
   const CACHE_NAME_PATTERN = new RegExp(`const CACHE_NAME = '${CACHE_NAME_BASE}';`);
   const CRITICAL_ASSETS_PATTERN = /const CRITICAL_ASSETS = \[\];/;
   return {
@@ -249,11 +249,11 @@ export default defineConfig(({ command }) => {
     },
     server: {
       host: process.env.HOST || '0.0.0.0',
-      port: parseInt(process.env.AUTOMAKER_WEB_PORT || '3007', 10),
+      port: parseInt(process.env.TAKTICIAN_WEB_PORT || '3007', 10),
       allowedHosts: true,
       proxy: {
         '/api': {
-          target: 'http://localhost:' + (process.env.AUTOMAKER_SERVER_PORT ?? '3008'),
+          target: 'http://localhost:' + (process.env.TAKTICIAN_SERVER_PORT ?? '3008'),
           changeOrigin: true,
           ws: true,
         },
@@ -337,7 +337,7 @@ export default defineConfig(({ command }) => {
       },
     },
     optimizeDeps: {
-      exclude: ['@automaker/platform'],
+      exclude: ['@taktician/platform'],
       // Ensure CJS packages that use require('react') are pre-bundled together with React
       // so that the CJS interop resolves to the same React instance as the rest of the app.
       // Without this, use-sync-external-store (used by zustand@4 inside @xyflow/react) may

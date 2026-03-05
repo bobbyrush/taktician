@@ -1,7 +1,7 @@
 {
-  "name": "@automaker/dependency-resolver",
+  "name": "@taktician/dependency-resolver",
   "version": "1.0.0",
-  "description": "Feature dependency resolution for AutoMaker",
+  "description": "Feature dependency resolution for Taktician",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -19,17 +19,17 @@
     "test:watch": "vitest"
   },
   "keywords": [
-    "automaker",
+    "taktician",
     "dependency",
     "resolver"
   ],
-  "author": "AutoMaker Team",
+  "author": "Taktician Team",
   "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=22.0.0 <23.0.0"
   },
   "dependencies": {
-    "@automaker/types": "1.0.0"
+    "@taktician/types": "1.0.0"
   },
   "devDependencies": {
     "@types/node": "22.19.3",

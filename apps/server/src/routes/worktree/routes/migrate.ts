@@ -2,11 +2,11 @@
  * POST /migrate endpoint - Migration endpoint (no longer needed)
  *
  * This endpoint is kept for backwards compatibility but no longer performs
- * any migration since .automaker is now stored in the project directory.
+ * any migration since .taktician is now stored in the project directory.
  */
 
 import type { Request, Response } from 'express';
-import { getAutomakerDir } from '@automaker/platform';
+import { getTakticianDir } from '@taktician/platform';
 
 export function createMigrateHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -20,13 +20,13 @@ export function createMigrateHandler() {
       return;
     }
 
-    // Migration is no longer needed - .automaker is stored in project directory
-    const automakerDir = getAutomakerDir(projectPath);
+    // Migration is no longer needed - .taktician is stored in project directory
+    const takticianDir = getTakticianDir(projectPath);
     res.json({
       success: true,
       migrated: false,
-      message: 'No migration needed - .automaker is stored in project directory',
-      path: automakerDir,
+      message: 'No migration needed - .taktician is stored in project directory',
+      path: takticianDir,
     });
   };
 }

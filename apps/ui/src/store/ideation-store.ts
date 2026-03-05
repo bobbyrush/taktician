@@ -12,8 +12,8 @@ import type {
   AnalysisSuggestion,
   ProjectAnalysisResult,
   IdeationContextSources,
-} from '@automaker/types';
-import { DEFAULT_IDEATION_CONTEXT_SOURCES } from '@automaker/types';
+} from '@taktician/types';
+import { DEFAULT_IDEATION_CONTEXT_SOURCES } from '@taktician/types';
 
 // ============================================================================
 // Generation Job Types
@@ -351,7 +351,7 @@ export const useIdeationStore = create<IdeationState & IdeationActions>()(
         }),
     }),
     {
-      name: 'automaker-ideation-store',
+      name: 'taktician-ideation-store',
       version: 5,
       partialize: (state) => ({
         // Only persist these fields

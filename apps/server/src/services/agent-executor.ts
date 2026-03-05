@@ -3,9 +3,9 @@
  */
 
 import path from 'path';
-import type { ExecuteOptions, ParsedTask } from '@automaker/types';
-import { buildPromptWithImages, createLogger, isAuthenticationError } from '@automaker/utils';
-import { getFeatureDir } from '@automaker/platform';
+import type { ExecuteOptions, ParsedTask } from '@taktician/types';
+import { buildPromptWithImages, createLogger, isAuthenticationError } from '@taktician/utils';
+import { getFeatureDir } from '@taktician/platform';
 import * as secureFs from '../lib/secure-fs.js';
 import { TypedEventBus } from './typed-event-bus.js';
 import { FeatureStateManager } from './feature-state-manager.js';
@@ -137,8 +137,8 @@ export class AgentExecutor {
     const outputPath = path.join(featureDirForOutput, 'agent-output.md');
     const rawOutputPath = path.join(featureDirForOutput, 'raw-output.jsonl');
     const enableRawOutput =
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === 'true' ||
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === '1';
+      process.env.TAKTICIAN_DEBUG_RAW_OUTPUT === 'true' ||
+      process.env.TAKTICIAN_DEBUG_RAW_OUTPUT === '1';
     let responseText = previousContent
       ? `${previousContent}\n\n---\n\n## Follow-up Session\n\n`
       : '';

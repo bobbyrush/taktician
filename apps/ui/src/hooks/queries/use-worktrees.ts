@@ -248,7 +248,8 @@ export function useWorktreeBranches(worktreePath: string | undefined, includeRem
         isGitRepo: true,
         hasCommits: true,
         trackingRemote: result.result?.trackingRemote,
-        remotesWithBranch: result.result?.remotesWithBranch,
+        remotesWithBranch: (result.result as { remotesWithBranch?: string[] } | undefined)
+          ?.remotesWithBranch,
       };
     },
     enabled: !!worktreePath,

@@ -7,15 +7,15 @@
 
 import { query, type Options, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
 import { BaseProvider } from './base-provider.js';
-import { classifyError, getUserFriendlyErrorMessage, createLogger } from '@automaker/utils';
-import { getClaudeAuthIndicators } from '@automaker/platform';
+import { classifyError, getUserFriendlyErrorMessage, createLogger } from '@taktician/utils';
+import { getClaudeAuthIndicators } from '@taktician/platform';
 import {
   getThinkingTokenBudget,
   validateBareModelId,
   type ClaudeApiProfile,
   type ClaudeCompatibleProvider,
   type Credentials,
-} from '@automaker/types';
+} from '@taktician/types';
 import type {
   ExecuteOptions,
   ProviderMessage,

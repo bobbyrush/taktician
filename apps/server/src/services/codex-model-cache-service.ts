@@ -1,7 +1,7 @@
 import path from 'path';
-import { secureFs } from '@automaker/platform';
-import { createLogger } from '@automaker/utils';
-import type { AppServerModel } from '@automaker/types';
+import { secureFs } from '@taktician/platform';
+import { createLogger } from '@taktician/utils';
+import type { AppServerModel } from '@taktician/types';
 import type { CodexAppServerService } from './codex-app-server-service.js';
 
 const logger = createLogger('CodexModelCache');

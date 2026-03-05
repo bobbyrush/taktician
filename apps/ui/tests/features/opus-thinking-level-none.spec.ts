@@ -32,18 +32,18 @@ test.describe('Opus thinking level', () => {
       JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
     );
 
-    const automakerDir = path.join(projectPath, '.automaker');
-    fs.mkdirSync(automakerDir, { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'context'), { recursive: true });
+    const takticianDir = path.join(projectPath, '.taktician');
+    fs.mkdirSync(takticianDir, { recursive: true });
+    fs.mkdirSync(path.join(takticianDir, 'features'), { recursive: true });
+    fs.mkdirSync(path.join(takticianDir, 'context'), { recursive: true });
 
     fs.writeFileSync(
-      path.join(automakerDir, 'categories.json'),
+      path.join(takticianDir, 'categories.json'),
       JSON.stringify({ categories: [] }, null, 2)
     );
 
     fs.writeFileSync(
-      path.join(automakerDir, 'app_spec.txt'),
+      path.join(takticianDir, 'app_spec.txt'),
       `# ${projectName}\n\nA test project for Opus thinking level e2e coverage.`
     );
   });
@@ -94,7 +94,7 @@ test.describe('Opus thinking level', () => {
 
     await confirmAddFeature(page);
 
-    const featuresDir = path.join(projectPath, '.automaker', 'features');
+    const featuresDir = path.join(projectPath, '.taktician', 'features');
     await expect.poll(() => fs.readdirSync(featuresDir).length).toBe(1);
 
     const featureDir = fs.readdirSync(featuresDir)[0];

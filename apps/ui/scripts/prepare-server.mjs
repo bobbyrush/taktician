@@ -21,13 +21,13 @@ const BUNDLE_DIR = join(APP_DIR, 'server-bundle');
 
 // Local workspace packages that need to be bundled
 const LOCAL_PACKAGES = [
-  '@automaker/types',
-  '@automaker/utils',
-  '@automaker/prompts',
-  '@automaker/platform',
-  '@automaker/model-resolver',
-  '@automaker/dependency-resolver',
-  '@automaker/git-utils',
+  '@taktician/types',
+  '@taktician/utils',
+  '@taktician/prompts',
+  '@taktician/platform',
+  '@taktician/model-resolver',
+  '@taktician/dependency-resolver',
+  '@taktician/git-utils',
 ];
 
 console.log('🔧 Preparing server for Electron bundling...\n');
@@ -53,7 +53,7 @@ const bundleLibsDir = join(BUNDLE_DIR, 'libs');
 mkdirSync(bundleLibsDir, { recursive: true });
 
 for (const pkgName of LOCAL_PACKAGES) {
-  const pkgDir = pkgName.replace('@automaker/', '');
+  const pkgDir = pkgName.replace('@taktician/', '');
   const srcDir = join(LIBS_DIR, pkgDir);
   const destDir = join(bundleLibsDir, pkgDir);
 
@@ -85,13 +85,13 @@ const serverPkg = JSON.parse(readFileSync(join(SERVER_DIR, 'package.json'), 'utf
 const dependencies = { ...serverPkg.dependencies };
 for (const pkgName of LOCAL_PACKAGES) {
   if (dependencies[pkgName]) {
-    const pkgDir = pkgName.replace('@automaker/', '');
+    const pkgDir = pkgName.replace('@taktician/', '');
     dependencies[pkgName] = `file:libs/${pkgDir}`;
   }
 }
 
 const bundlePkg = {
-  name: '@automaker/server-bundle',
+  name: '@taktician/server-bundle',
   version: serverPkg.version,
   type: 'module',
   main: 'dist/index.js',
@@ -115,10 +115,10 @@ execSync('npm install --omit=dev', {
 // Step 6b: Replace symlinks for local packages with real copies
 // npm install creates symlinks for file: references, but these break when packaged by electron-builder
 console.log('🔗 Replacing symlinks with real directory copies...');
-const nodeModulesAutomaker = join(BUNDLE_DIR, 'node_modules', '@automaker');
+const nodeModulesTaktician = join(BUNDLE_DIR, 'node_modules', '@taktician');
 for (const pkgName of LOCAL_PACKAGES) {
-  const pkgDir = pkgName.replace('@automaker/', '');
-  const nmPkgPath = join(nodeModulesAutomaker, pkgDir);
+  const pkgDir = pkgName.replace('@taktician/', '');
+  const nmPkgPath = join(nodeModulesTaktician, pkgDir);
   try {
     // lstatSync does not follow symlinks, allowing us to check for broken ones
     if (lstatSync(nmPkgPath).isSymbolicLink()) {

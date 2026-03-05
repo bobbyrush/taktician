@@ -14,7 +14,7 @@ import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { findCliInWsl, isWslAvailable } from '@automaker/platform';
+import { findCliInWsl, isWslAvailable } from '@taktician/platform';
 import {
   CliProvider,
   type CliSpawnConfig,
@@ -29,7 +29,7 @@ import type {
   ModelDefinition,
   ContentBlock,
 } from './types.js';
-import { validateBareModelId } from '@automaker/types';
+import { validateBareModelId } from '@taktician/types';
 import { validateApiKey } from '../lib/auth-utils.js';
 import { getEffectivePermissions, detectProfile } from '../services/cursor-config-service.js';
 import {
@@ -40,9 +40,9 @@ import {
   type CursorResultEvent,
   type CursorAuthStatus,
   CURSOR_MODEL_MAP,
-} from '@automaker/types';
-import { createLogger, isAbortError } from '@automaker/utils';
-import { spawnJSONLProcess, execInWsl } from '@automaker/platform';
+} from '@taktician/types';
+import { createLogger, isAbortError } from '@taktician/utils';
+import { spawnJSONLProcess, execInWsl } from '@taktician/platform';
 
 // Create logger for this module
 const logger = createLogger('CursorProvider');
@@ -462,7 +462,7 @@ export class CursorProvider extends CliProvider {
   }
 
   /**
-   * Convert Cursor event to AutoMaker ProviderMessage format
+   * Convert Cursor event to Taktician ProviderMessage format
    * Made public as required by CliProvider abstract method
    */
   normalizeEvent(event: unknown): ProviderMessage | null {
@@ -860,7 +860,7 @@ export class CursorProvider extends CliProvider {
     if (options.mcpServers && Object.keys(options.mcpServers).length > 0) {
       const serverCount = Object.keys(options.mcpServers).length;
       logger.warn(
-        `MCP servers configured (${serverCount}) but not yet supported by Cursor CLI in AutoMaker. ` +
+        `MCP servers configured (${serverCount}) but not yet supported by Cursor CLI in Taktician. ` +
           `MCP support for Cursor will be added in a future release. ` +
           `The configured MCP servers will be ignored for this execution.`
       );
@@ -894,10 +894,10 @@ export class CursorProvider extends CliProvider {
       `Active permission profile: ${activeProfile ?? 'none'}, permissions: ${JSON.stringify(effectivePermissions)}`
     );
 
-    // Debug: log raw events when AUTOMAKER_DEBUG_RAW_OUTPUT is enabled
+    // Debug: log raw events when TAKTICIAN_DEBUG_RAW_OUTPUT is enabled
     const debugRawEvents =
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === 'true' ||
-      process.env.AUTOMAKER_DEBUG_RAW_OUTPUT === '1';
+      process.env.TAKTICIAN_DEBUG_RAW_OUTPUT === 'true' ||
+      process.env.TAKTICIAN_DEBUG_RAW_OUTPUT === '1';
 
     try {
       for await (const rawEvent of spawnJSONLProcess(subprocessOptions)) {

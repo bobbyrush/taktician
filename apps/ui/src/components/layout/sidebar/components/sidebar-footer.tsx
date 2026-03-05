@@ -53,10 +53,10 @@ export function SidebarFooter({
   const handleFeedbackClick = useCallback(() => {
     try {
       const api = getElectronAPI();
-      api.openExternalLink('https://github.com/AutoMaker-Org/automaker/issues');
+      api.openExternalLink('https://github.com/bobbyrush/taktician/issues');
     } catch {
       // Fallback for non-Electron environments (SSR, web browser)
-      window.open('https://github.com/AutoMaker-Org/automaker/issues', '_blank');
+      window.open('https://github.com/bobbyrush/taktician/issues', '_blank');
     }
   }, []);
 

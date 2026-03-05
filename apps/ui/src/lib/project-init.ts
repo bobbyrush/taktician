@@ -1,11 +1,11 @@
 /**
  * Project initialization utilities
  *
- * Handles the setup of the .automaker directory structure when opening
+ * Handles the setup of the .taktician directory structure when opening
  * new or existing projects.
  */
 
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import { getElectronAPI } from './electron';
 
 const logger = createLogger('ProjectInit');
@@ -19,21 +19,21 @@ export interface ProjectInitResult {
 }
 
 /**
- * Required files and directories in the .automaker directory
+ * Required files and directories in the .taktician directory
  * Note: app_spec.txt is NOT created automatically - user must set it up via the spec editor
  */
 const REQUIRED_STRUCTURE: {
   directories: string[];
   files: Record<string, string>;
 } = {
-  directories: ['.automaker', '.automaker/context', '.automaker/features', '.automaker/images'],
+  directories: ['.taktician', '.taktician/context', '.taktician/features', '.taktician/images'],
   files: {
-    '.automaker/categories.json': '[]',
+    '.taktician/categories.json': '[]',
   },
 };
 
 /**
- * Initializes the .automaker directory structure for a project
+ * Initializes the .taktician directory structure for a project
  *
  * @param projectPath - The root path of the project
  * @returns Result indicating what was created or if the project was already initialized
@@ -136,7 +136,7 @@ export async function initializeProject(projectPath: string): Promise<ProjectIni
 }
 
 /**
- * Checks if a project has the required .automaker structure
+ * Checks if a project has the required .taktician structure
  *
  * @param projectPath - The root path of the project
  * @returns true if all required files/directories exist
@@ -212,7 +212,7 @@ export async function getProjectInitStatus(projectPath: string): Promise<{
 export async function hasAppSpec(projectPath: string): Promise<boolean> {
   const api = getElectronAPI();
   try {
-    const fullPath = `${projectPath}/.automaker/app_spec.txt`;
+    const fullPath = `${projectPath}/.taktician/app_spec.txt`;
     return await api.exists(fullPath);
   } catch (error) {
     logger.error('Error checking app_spec.txt:', error);
@@ -221,18 +221,18 @@ export async function hasAppSpec(projectPath: string): Promise<boolean> {
 }
 
 /**
- * Checks if the .automaker directory exists for a project
+ * Checks if the .taktician directory exists for a project
  *
  * @param projectPath - The root path of the project
- * @returns true if .automaker directory exists
+ * @returns true if .taktician directory exists
  */
-export async function hasAutomakerDir(projectPath: string): Promise<boolean> {
+export async function hasTakticianDir(projectPath: string): Promise<boolean> {
   const api = getElectronAPI();
   try {
-    const fullPath = `${projectPath}/.automaker`;
+    const fullPath = `${projectPath}/.taktician`;
     return await api.exists(fullPath);
   } catch (error) {
-    logger.error('Error checking .automaker dir:', error);
+    logger.error('Error checking .taktician dir:', error);
     return false;
   }
 }

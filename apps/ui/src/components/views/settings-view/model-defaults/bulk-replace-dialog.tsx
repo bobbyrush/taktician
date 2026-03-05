@@ -23,8 +23,8 @@ import type {
   PhaseModelEntry,
   ClaudeCompatibleProvider,
   ClaudeModelAlias,
-} from '@automaker/types';
-import { DEFAULT_PHASE_MODELS, DEFAULT_GLOBAL_SETTINGS } from '@automaker/types';
+} from '@taktician/types';
+import { DEFAULT_PHASE_MODELS, DEFAULT_GLOBAL_SETTINGS } from '@taktician/types';
 
 interface BulkReplaceDialogProps {
   open: boolean;
@@ -44,6 +44,7 @@ const PHASE_LABELS: Record<PhaseModelKey, string> = {
   projectAnalysisModel: 'Project Analysis',
   ideationModel: 'Ideation',
   memoryExtractionModel: 'Memory Extraction',
+  prDescriptionModel: 'PR Description',
 };
 
 const ALL_PHASES = Object.keys(PHASE_LABELS) as PhaseModelKey[];

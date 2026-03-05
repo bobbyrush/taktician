@@ -6,10 +6,10 @@ import type { Request, Response } from 'express';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs/promises';
-import { isGitRepo } from '@automaker/git-utils';
+import { isGitRepo } from '@taktician/git-utils';
 import { getErrorMessage, logError, isValidBranchName } from '../common.js';
 import { execGitCommand } from '../../../lib/git.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@taktician/utils';
 
 const execAsync = promisify(exec);
 const logger = createLogger('Worktree');

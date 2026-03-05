@@ -1,6 +1,6 @@
 /**
- * @automaker/utils
- * Shared utility functions for AutoMaker
+ * @taktician/utils
+ * Shared utility functions for Taktician
  */
 
 // Error handling

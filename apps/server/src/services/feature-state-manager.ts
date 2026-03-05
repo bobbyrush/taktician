@@ -14,15 +14,15 @@
  */
 
 import path from 'path';
-import type { Feature, ParsedTask, PlanSpec } from '@automaker/types';
+import type { Feature, ParsedTask, PlanSpec } from '@taktician/types';
 import {
   atomicWriteJson,
   readJsonWithRecovery,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
   createLogger,
-} from '@automaker/utils';
-import { getFeatureDir, getFeaturesDir } from '@automaker/platform';
+} from '@taktician/utils';
+import { getFeatureDir, getFeaturesDir } from '@taktician/platform';
 import * as secureFs from '../lib/secure-fs.js';
 import type { EventEmitter } from '../lib/events.js';
 import type { AutoModeEventType } from './typed-event-bus.js';

@@ -4,7 +4,7 @@ import { Feature, useAppStore } from '@/store/app-store';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertCircle, Lock, Hand, Sparkles, SkipForward } from 'lucide-react';
-import { getBlockingDependencies } from '@automaker/dependency-resolver';
+import { getBlockingDependencies } from '@taktician/dependency-resolver';
 import { useShallow } from 'zustand/react/shallow';
 import { usePipelineConfig } from '@/hooks/queries/use-pipeline';
 

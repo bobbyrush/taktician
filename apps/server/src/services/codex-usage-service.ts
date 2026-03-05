@@ -3,8 +3,8 @@ import {
   getCodexAuthPath,
   systemPathExists,
   systemPathReadFile,
-} from '@automaker/platform';
-import { createLogger } from '@automaker/utils';
+} from '@taktician/platform';
+import { createLogger } from '@taktician/utils';
 import type { CodexAppServerService } from './codex-app-server-service.js';
 
 const logger = createLogger('CodexUsage');

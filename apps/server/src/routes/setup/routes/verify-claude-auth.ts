@@ -5,8 +5,8 @@
 
 import type { Request, Response } from 'express';
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { createLogger } from '@automaker/utils';
-import { getClaudeAuthIndicators } from '@automaker/platform';
+import { createLogger } from '@taktician/utils';
+import { getClaudeAuthIndicators } from '@taktician/platform';
 import { getApiKey } from '../common.js';
 import {
   createSecureAuthEnv,

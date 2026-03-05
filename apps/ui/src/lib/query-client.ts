@@ -12,7 +12,7 @@
 
 import { QueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import { isConnectionError, handleServerOffline } from './http-api-client';
 import { isMobileDevice } from './mobile-detect';
 

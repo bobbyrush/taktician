@@ -10,8 +10,8 @@ import {
   electronUserDataExists,
   electronUserDataReadFileSync,
   electronUserDataWriteFileSync,
-} from '@automaker/platform';
-import { createLogger } from '@automaker/utils/logger';
+} from '@taktician/platform';
+import { createLogger } from '@taktician/utils/logger';
 import { API_KEY_FILENAME } from '../constants';
 import { state } from '../state';
 

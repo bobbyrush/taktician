@@ -14,7 +14,7 @@ import {
   isGeminiModel,
   isCopilotModel,
   type ModelProvider,
-} from '@automaker/types';
+} from '@taktician/types';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -34,7 +34,7 @@ export function isProviderDisconnected(providerName: string): boolean {
   const markerFile = DISCONNECTED_MARKERS[providerName.toLowerCase()];
   if (!markerFile) return false;
 
-  const markerPath = path.join(process.cwd(), '.automaker', markerFile);
+  const markerPath = path.join(process.cwd(), '.taktician', markerFile);
   return fs.existsSync(markerPath);
 }
 

@@ -15,7 +15,11 @@ import {
 import { createStatusHandler } from './routes/status.js';
 import { createAuthHandler } from './routes/auth.js';
 import { createLogoutHandler } from './routes/logout.js';
-import { createSessionsListHandler, createSessionsCreateHandler } from './routes/sessions.js';
+import {
+  createSessionsListHandler,
+  createSessionsCreateHandler,
+  createSessionGetHandler,
+} from './routes/sessions.js';
 import { createSessionDeleteHandler } from './routes/session-delete.js';
 import { createSessionResizeHandler } from './routes/session-resize.js';
 import { createSettingsGetHandler, createSettingsUpdateHandler } from './routes/settings.js';
@@ -34,6 +38,7 @@ export function createTerminalRoutes(): Router {
   router.use(terminalAuthMiddleware);
 
   router.get('/sessions', createSessionsListHandler());
+  router.get('/sessions/:id', createSessionGetHandler());
   router.post('/sessions', createSessionsCreateHandler());
   router.delete('/sessions/:id', createSessionDeleteHandler());
   router.post('/sessions/:id/resize', createSessionResizeHandler());

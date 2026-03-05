@@ -6,8 +6,8 @@
 
 import path from 'path';
 import { app } from 'electron';
-import { electronAppExists } from '@automaker/platform';
-import { createLogger } from '@automaker/utils/logger';
+import { electronAppExists } from '@taktician/platform';
+import { createLogger } from '@taktician/utils/logger';
 
 const logger = createLogger('IconManager');
 

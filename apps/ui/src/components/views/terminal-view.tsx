@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import {
   Terminal as TerminalIcon,
   Plus,
@@ -36,13 +36,11 @@ import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -77,6 +75,9 @@ import {
 import { cn } from '@/lib/utils';
 import { apiFetch, apiGet, apiPost, apiDeleteRaw } from '@/lib/api-fetch';
 import { getApiKey } from '@/lib/http-api-client';
+import { useGlobalSettings } from '@/hooks/queries/use-settings';
+import type { VpsProfile } from '@taktician/types';
+import type { TerminalConnectionMeta } from '@/store/types/terminal-types';
 
 const logger = createLogger('Terminal');
 
@@ -89,6 +90,48 @@ interface TerminalStatus {
     defaultShell: string;
     arch: string;
   };
+}
+
+type TerminalSessionConnectionRequest =
+  | { type: 'local' }
+  | {
+      type: 'ssh';
+      ssh: {
+        host: string;
+        port: number;
+        username: string;
+        identityFile?: string;
+        hostKeyPolicy?: 'accept-new' | 'yes' | 'no';
+        label?: string;
+      };
+    };
+
+function toConnectionRequest(
+  connection: TerminalConnectionMeta | undefined
+): TerminalSessionConnectionRequest | undefined {
+  if (!connection) {
+    return undefined;
+  }
+
+  if (connection.type === 'local') {
+    return { type: 'local' };
+  }
+
+  return {
+    type: 'ssh',
+    ssh: {
+      host: connection.host,
+      port: connection.port,
+      username: connection.username,
+      identityFile: connection.identityFile,
+      hostKeyPolicy: connection.hostKeyPolicy,
+      label: connection.label,
+    },
+  };
+}
+
+function quoteShellArg(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 // Tab component with drag-drop support and double-click to rename
@@ -309,8 +352,14 @@ export function TerminalView({
     current: number;
     max: number;
   } | null>(null);
+  const [selectedVpsProfileIds, setSelectedVpsProfileIds] = useState<string[]>([]);
   const hasShownHighRamWarningRef = useRef<boolean>(false);
   const initialCwdHandledRef = useRef<string | null>(null);
+  const { data: globalSettings } = useGlobalSettings();
+  const vpsProfiles = useMemo(
+    () => globalSettings?.vpsProfiles ?? [],
+    [globalSettings?.vpsProfiles]
+  );
 
   // Show warning when 20+ terminals are open
   useEffect(() => {
@@ -335,6 +384,11 @@ export function TerminalView({
   const defaultRunScript = useAppStore((state) => state.terminalState.defaultRunScript);
 
   const serverUrl = import.meta.env.VITE_SERVER_URL || getServerUrlSync();
+
+  useEffect(() => {
+    const validIds = new Set(vpsProfiles.map((profile) => profile.id));
+    setSelectedVpsProfileIds((current) => current.filter((id) => validIds.has(id)));
+  }, [vpsProfiles]);
 
   // Helper to collect all session IDs from all tabs
   const collectAllSessionIds = useCallback((): string[] => {
@@ -781,11 +835,18 @@ export function TerminalView({
         };
 
         // Helper to create a new terminal session
-        const createSession = async (): Promise<string | null> => {
+        const createSession = async (
+          connection?: TerminalConnectionMeta
+        ): Promise<string | null> => {
           try {
             const data = await apiPost<{ success: boolean; data?: { id: string } }>(
               '/api/terminal/sessions',
-              { cwd: currentPath, cols: 80, rows: 24 },
+              {
+                cwd: connection?.type === 'ssh' ? undefined : currentPath,
+                cols: 80,
+                rows: 24,
+                connection: toConnectionRequest(connection),
+              },
               { headers }
             );
             return data.success && data.data ? data.data.id : null;
@@ -814,7 +875,7 @@ export function TerminalView({
 
             // If no saved session or it's gone, create a new one
             if (!sessionId) {
-              sessionId = await createSession();
+              sessionId = await createSession(persisted.connection);
             }
 
             if (!sessionId) {
@@ -827,6 +888,8 @@ export function TerminalView({
               sessionId,
               size: persisted.size,
               fontSize: persisted.fontSize,
+              branchName: persisted.branchName,
+              connection: persisted.connection,
             };
           }
 
@@ -1002,6 +1065,23 @@ export function TerminalView({
     return undefined;
   };
 
+  const findSessionConnection = (
+    layout: TerminalPanelContent | null,
+    sessionId: string
+  ): TerminalConnectionMeta | undefined => {
+    if (!layout) return undefined;
+    if (layout.type === 'terminal') {
+      return layout.sessionId === sessionId ? layout.connection : undefined;
+    }
+    if (layout.type === 'split') {
+      for (const panel of layout.panels) {
+        const found = findSessionConnection(panel, sessionId);
+        if (found !== undefined) return found;
+      }
+    }
+    return undefined;
+  };
+
   // Helper: resolve the worktree cwd and branchName for the currently active terminal session.
   // Returns { cwd, branchName } if the active terminal was opened in a worktree, or {} otherwise.
   const getActiveSessionWorktreeInfo = (): { cwd?: string; branchName?: string } => {
@@ -1019,6 +1099,70 @@ export function TerminalView({
     return { cwd: worktree.path, branchName };
   };
 
+  const toSshConnectionMeta = (profile: VpsProfile): TerminalConnectionMeta => ({
+    type: 'ssh',
+    host: profile.host,
+    port: profile.port || 22,
+    username: profile.username,
+    label: profile.name,
+    identityFile: profile.identityFile,
+    hostKeyPolicy: profile.hostKeyPolicy,
+  });
+
+  const isVpsWorkspaceProject = currentProject?.workspaceType === 'vps';
+  const boundWorkspaceRemotePath = isVpsWorkspaceProject ? currentProject?.remotePath?.trim() : '';
+  const boundWorkspaceProfile = useMemo(() => {
+    if (!isVpsWorkspaceProject || !currentProject?.vpsProfileId) {
+      return null;
+    }
+    return vpsProfiles.find((profile) => profile.id === currentProject.vpsProfileId) ?? null;
+  }, [currentProject?.vpsProfileId, isVpsWorkspaceProject, vpsProfiles]);
+  const boundWorkspaceConnection = useMemo<TerminalConnectionMeta | undefined>(() => {
+    if (!boundWorkspaceProfile) {
+      return undefined;
+    }
+    return toSshConnectionMeta(boundWorkspaceProfile);
+  }, [boundWorkspaceProfile]);
+
+  const isBoundWorkspaceConnection = useCallback(
+    (connection: TerminalConnectionMeta | undefined): boolean => {
+      if (!isVpsWorkspaceProject) {
+        return false;
+      }
+      if (!boundWorkspaceConnection || boundWorkspaceConnection.type !== 'ssh') {
+        return false;
+      }
+      if (!connection || connection.type !== 'ssh') {
+        return false;
+      }
+      return (
+        connection.host === boundWorkspaceConnection.host &&
+        connection.port === boundWorkspaceConnection.port &&
+        connection.username === boundWorkspaceConnection.username
+      );
+    },
+    [boundWorkspaceConnection, isVpsWorkspaceProject]
+  );
+
+  const getWorkspaceInitialCommand = useCallback(
+    (connection: TerminalConnectionMeta | undefined, command?: string): string | undefined => {
+      if (!isBoundWorkspaceConnection(connection)) {
+        return command;
+      }
+
+      const remotePath = boundWorkspaceRemotePath;
+      const effectiveCommand = command ?? defaultRunScript;
+
+      if (!remotePath) {
+        return effectiveCommand;
+      }
+
+      const cdCommand = `cd ${quoteShellArg(remotePath)}`;
+      return effectiveCommand ? `${cdCommand} && ${effectiveCommand}` : cdCommand;
+    },
+    [boundWorkspaceRemotePath, defaultRunScript, isBoundWorkspaceConnection]
+  );
+
   // Create a new terminal session
   // targetSessionId: the terminal to split (if splitting an existing terminal)
   // customCwd: optional working directory to use instead of the current project path
@@ -1027,13 +1171,20 @@ export function TerminalView({
     direction?: 'horizontal' | 'vertical',
     targetSessionId?: string,
     customCwd?: string,
-    branchName?: string
+    branchName?: string,
+    connection?: TerminalConnectionMeta
   ) => {
     if (!canCreateTerminal('[Terminal] Debounced terminal creation')) {
       return;
     }
 
     try {
+      const activeConnection =
+        terminalState.activeSessionId && activeTab?.layout
+          ? findSessionConnection(activeTab.layout, terminalState.activeSessionId)
+          : undefined;
+      const resolvedConnection = connection ?? activeConnection ?? boundWorkspaceConnection;
+
       const headers: Record<string, string> = {};
       if (terminalState.authToken) {
         headers['X-Terminal-Token'] = terminalState.authToken;
@@ -1041,15 +1192,35 @@ export function TerminalView({
 
       const response = await apiFetch('/api/terminal/sessions', 'POST', {
         headers,
-        body: { cwd: customCwd || currentProject?.path || undefined, cols: 80, rows: 24 },
+        body: {
+          cwd:
+            resolvedConnection?.type === 'ssh'
+              ? undefined
+              : customCwd || currentProject?.path || undefined,
+          cols: 80,
+          rows: 24,
+          connection: toConnectionRequest(resolvedConnection),
+        },
       });
       const data = await response.json();
 
       if (data.success) {
-        addTerminalToLayout(data.data.id, direction, targetSessionId, branchName);
+        addTerminalToLayout(
+          data.data.id,
+          direction,
+          targetSessionId,
+          branchName,
+          resolvedConnection
+        );
+        const workspaceInitialCommand = getWorkspaceInitialCommand(resolvedConnection);
         // Mark this session as new for running initial command
-        if (defaultRunScript) {
+        if (workspaceInitialCommand || defaultRunScript) {
           setNewSessionIds((prev) => new Set(prev).add(data.data.id));
+          if (workspaceInitialCommand) {
+            setSessionCommandOverrides((prev) =>
+              new Map(prev).set(data.data.id, workspaceInitialCommand)
+            );
+          }
         }
         // Refresh session count
         fetchServerSettings();
@@ -1085,16 +1256,27 @@ export function TerminalView({
   const createTerminalInNewTab = async (
     customCwd?: string,
     branchName?: string,
-    command?: string
+    command?: string,
+    connection?: TerminalConnectionMeta,
+    skipDebounce: boolean = false
   ) => {
-    if (!canCreateTerminal('[Terminal] Debounced terminal tab creation')) {
+    if (!skipDebounce && !canCreateTerminal('[Terminal] Debounced terminal tab creation')) {
       return;
     }
 
+    const activeConnection =
+      terminalState.activeSessionId && activeTab?.layout
+        ? findSessionConnection(activeTab.layout, terminalState.activeSessionId)
+        : undefined;
+    const resolvedConnection = connection ?? activeConnection ?? boundWorkspaceConnection;
+
     // Use provided cwd/branch, or inherit from active session's worktree
-    const { cwd: worktreeCwd, branchName: worktreeBranch } = customCwd
-      ? { cwd: customCwd, branchName: branchName }
-      : getActiveSessionWorktreeInfo();
+    const { cwd: worktreeCwd, branchName: worktreeBranch } =
+      resolvedConnection?.type === 'ssh'
+        ? {}
+        : customCwd
+          ? { cwd: customCwd, branchName: branchName }
+          : getActiveSessionWorktreeInfo();
 
     const tabId = addTerminalTab();
     try {
@@ -1105,19 +1287,32 @@ export function TerminalView({
 
       const response = await apiFetch('/api/terminal/sessions', 'POST', {
         headers,
-        body: { cwd: worktreeCwd || currentProject?.path || undefined, cols: 80, rows: 24 },
+        body: {
+          cwd:
+            resolvedConnection?.type === 'ssh'
+              ? undefined
+              : worktreeCwd || currentProject?.path || undefined,
+          cols: 80,
+          rows: 24,
+          connection: toConnectionRequest(resolvedConnection),
+        },
       });
       const data = await response.json();
 
       if (data.success) {
         // Add to the newly created tab (passing branchName so the panel header shows the branch badge)
         const { addTerminalToTab } = useAppStore.getState();
-        addTerminalToTab(data.data.id, tabId, undefined, worktreeBranch);
+        addTerminalToTab(data.data.id, tabId, undefined, worktreeBranch, resolvedConnection);
+        const workspaceInitialCommand = getWorkspaceInitialCommand(resolvedConnection, command);
         // Mark this session as new for running initial command
-        if (command || defaultRunScript) {
+        if (workspaceInitialCommand || command || defaultRunScript) {
           setNewSessionIds((prev) => new Set(prev).add(data.data.id));
-          // Store per-session command override if an explicit command was provided
-          if (command) {
+          // Store per-session command override if provided or derived for bound workspace.
+          if (workspaceInitialCommand) {
+            setSessionCommandOverrides((prev) =>
+              new Map(prev).set(data.data.id, workspaceInitialCommand)
+            );
+          } else if (command) {
             setSessionCommandOverrides((prev) => new Map(prev).set(data.data.id, command));
           }
         }
@@ -1152,6 +1347,90 @@ export function TerminalView({
     } finally {
       isCreatingRef.current = false;
     }
+  };
+
+  const toggleVpsProfileSelection = (profileId: string, checked: boolean) => {
+    setSelectedVpsProfileIds((current) => {
+      if (checked) {
+        if (current.includes(profileId)) {
+          return current;
+        }
+        return [...current, profileId];
+      }
+      return current.filter((id) => id !== profileId);
+    });
+  };
+
+  const connectSelectedVpsProfiles = async () => {
+    if (selectedVpsProfileIds.length === 0) {
+      toast.info('Select at least one VPS profile');
+      return;
+    }
+
+    const profilesById = new Map(vpsProfiles.map((profile) => [profile.id, profile]));
+    const selectedProfiles = selectedVpsProfileIds
+      .map((profileId) => profilesById.get(profileId))
+      .filter((profile): profile is VpsProfile => Boolean(profile));
+
+    if (selectedProfiles.length === 0) {
+      toast.error('Selected VPS profiles were not found');
+      return;
+    }
+
+    for (const profile of selectedProfiles) {
+      await createTerminalInNewTab(
+        undefined,
+        undefined,
+        undefined,
+        toSshConnectionMeta(profile),
+        true
+      );
+    }
+
+    toast.success(
+      `Started ${selectedProfiles.length} VPS terminal connection${selectedProfiles.length > 1 ? 's' : ''}`
+    );
+  };
+
+  const selectedVpsProfilesCount = selectedVpsProfileIds.length;
+
+  const renderVpsProfileMenu = (): React.ReactNode => {
+    if (vpsProfiles.length === 0) {
+      return null;
+    }
+
+    return (
+      <>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs text-muted-foreground">
+          Connect to VPS
+        </DropdownMenuLabel>
+        {vpsProfiles.map((profile) => (
+          <DropdownMenuCheckboxItem
+            key={profile.id}
+            checked={selectedVpsProfileIds.includes(profile.id)}
+            onCheckedChange={(checked) => toggleVpsProfileSelection(profile.id, checked === true)}
+          >
+            <div className="flex flex-col min-w-0">
+              <span className="truncate">{profile.name}</span>
+              <span className="text-[10px] text-muted-foreground truncate">
+                {profile.username}@{profile.host}:{profile.port ?? 22}
+              </span>
+            </div>
+          </DropdownMenuCheckboxItem>
+        ))}
+        <DropdownMenuItem
+          className="gap-2"
+          disabled={selectedVpsProfilesCount === 0}
+          onClick={() => {
+            void connectSelectedVpsProfiles();
+          }}
+        >
+          <TerminalIcon className="h-4 w-4" />
+          Connect Selected ({selectedVpsProfilesCount})
+        </DropdownMenuItem>
+      </>
+    );
   };
 
   // Kill a terminal session
@@ -1485,16 +1764,18 @@ export function TerminalView({
             onClose={() => killTerminal(content.sessionId)}
             onSplitHorizontal={() => {
               const { cwd, branchName } = getActiveSessionWorktreeInfo();
-              createTerminal('horizontal', content.sessionId, cwd, branchName);
+              createTerminal('horizontal', content.sessionId, cwd, branchName, content.connection);
             }}
             onSplitVertical={() => {
               const { cwd, branchName } = getActiveSessionWorktreeInfo();
-              createTerminal('vertical', content.sessionId, cwd, branchName);
+              createTerminal('vertical', content.sessionId, cwd, branchName, content.connection);
             }}
-            onNewTab={createTerminalInNewTab}
+            onNewTab={() =>
+              createTerminalInNewTab(undefined, undefined, undefined, content.connection)
+            }
             onRunCommandInNewTab={(command: string) => {
               const { cwd, branchName: branch } = getActiveSessionWorktreeInfo();
-              createTerminalInNewTab(cwd, branch, command);
+              createTerminalInNewTab(cwd, branch, command, content.connection);
             }}
             onNavigateUp={() => navigateToTerminal('up')}
             onNavigateDown={() => navigateToTerminal('down')}
@@ -1515,6 +1796,7 @@ export function TerminalView({
             isMaximized={terminalState.maximizedSessionId === content.sessionId}
             onToggleMaximize={() => toggleTerminalMaximized(content.sessionId)}
             branchName={content.branchName}
+            connection={content.connection}
           />
         </TerminalErrorBoundary>
       );
@@ -1709,6 +1991,49 @@ export function TerminalView({
             <Plus className="h-4 w-4 mr-2" />
             New Terminal
           </Button>
+
+          {vpsProfiles.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="w-full" variant="outline">
+                  <TerminalIcon className="h-4 w-4 mr-2" />
+                  Connect to VPS
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-72">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Select one or more profiles
+                </DropdownMenuLabel>
+                {vpsProfiles.map((profile) => (
+                  <DropdownMenuCheckboxItem
+                    key={profile.id}
+                    checked={selectedVpsProfileIds.includes(profile.id)}
+                    onCheckedChange={(checked) =>
+                      toggleVpsProfileSelection(profile.id, checked === true)
+                    }
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate">{profile.name}</span>
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        {profile.username}@{profile.host}:{profile.port ?? 22}
+                      </span>
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="gap-2"
+                  disabled={selectedVpsProfilesCount === 0}
+                  onClick={() => {
+                    void connectSelectedVpsProfiles();
+                  }}
+                >
+                  <TerminalIcon className="h-4 w-4" />
+                  Connect Selected ({selectedVpsProfilesCount})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {status?.platform && (
@@ -1837,6 +2162,7 @@ export function TerminalView({
                       </>
                     );
                   })()}
+                  {renderVpsProfileMenu()}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -2160,16 +2486,52 @@ export function TerminalView({
                 onClose={() => killTerminal(terminalState.maximizedSessionId!)}
                 onSplitHorizontal={() => {
                   const { cwd, branchName } = getActiveSessionWorktreeInfo();
-                  createTerminal('horizontal', terminalState.maximizedSessionId!, cwd, branchName);
+                  createTerminal(
+                    'horizontal',
+                    terminalState.maximizedSessionId!,
+                    cwd,
+                    branchName,
+                    findSessionConnection(
+                      activeTab?.layout || null,
+                      terminalState.maximizedSessionId!
+                    )
+                  );
                 }}
                 onSplitVertical={() => {
                   const { cwd, branchName } = getActiveSessionWorktreeInfo();
-                  createTerminal('vertical', terminalState.maximizedSessionId!, cwd, branchName);
+                  createTerminal(
+                    'vertical',
+                    terminalState.maximizedSessionId!,
+                    cwd,
+                    branchName,
+                    findSessionConnection(
+                      activeTab?.layout || null,
+                      terminalState.maximizedSessionId!
+                    )
+                  );
                 }}
-                onNewTab={createTerminalInNewTab}
+                onNewTab={() =>
+                  createTerminalInNewTab(
+                    undefined,
+                    undefined,
+                    undefined,
+                    findSessionConnection(
+                      activeTab?.layout || null,
+                      terminalState.maximizedSessionId!
+                    )
+                  )
+                }
                 onRunCommandInNewTab={(command: string) => {
                   const { cwd, branchName: branch } = getActiveSessionWorktreeInfo();
-                  createTerminalInNewTab(cwd, branch, command);
+                  createTerminalInNewTab(
+                    cwd,
+                    branch,
+                    command,
+                    findSessionConnection(
+                      activeTab?.layout || null,
+                      terminalState.maximizedSessionId!
+                    )
+                  );
                 }}
                 onSessionInvalid={() => {
                   const sessionId = terminalState.maximizedSessionId!;
@@ -2191,6 +2553,10 @@ export function TerminalView({
                 onCommandRan={() => handleCommandRan(terminalState.maximizedSessionId!)}
                 isMaximized={true}
                 onToggleMaximize={() => toggleTerminalMaximized(terminalState.maximizedSessionId!)}
+                connection={findSessionConnection(
+                  activeTab?.layout || null,
+                  terminalState.maximizedSessionId!
+                )}
               />
             </TerminalErrorBoundary>
           ) : activeTab?.layout ? (

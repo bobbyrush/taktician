@@ -4,10 +4,10 @@
  * Provides persistent storage for:
  * - Global settings (DATA_DIR/settings.json)
  * - Credentials (DATA_DIR/credentials.json)
- * - Per-project settings ({projectPath}/.automaker/settings.json)
+ * - Per-project settings ({projectPath}/.taktician/settings.json)
  */
 
-import { createLogger, atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@automaker/utils';
+import { createLogger, atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@taktician/utils';
 import * as secureFs from '../lib/secure-fs.js';
 import os from 'os';
 import path from 'path';
@@ -18,8 +18,8 @@ import {
   getCredentialsPath,
   getProjectSettingsPath,
   ensureDataDir,
-  ensureAutomakerDir,
-} from '@automaker/platform';
+  ensureTakticianDir,
+} from '@taktician/platform';
 import type {
   GlobalSettings,
   Credentials,
@@ -51,7 +51,7 @@ import {
   migrateModelId,
   migrateCursorModelIds,
   migrateOpencodeModelIds,
-} from '@automaker/types';
+} from '@taktician/types';
 
 const logger = createLogger('SettingsService');
 
@@ -98,7 +98,7 @@ async function writeSettingsJson(filePath: string, data: unknown): Promise<void>
  * for reliability. Provides three levels of settings:
  * - Global settings: shared preferences in {dataDir}/settings.json
  * - Credentials: sensitive API keys in {dataDir}/credentials.json
- * - Project settings: per-project overrides in {projectPath}/.automaker/settings.json
+ * - Project settings: per-project overrides in {projectPath}/.taktician/settings.json
  *
  * All operations are atomic (write to temp file, then rename) to prevent corruption.
  * Missing files are treated as empty and return defaults on read.
@@ -110,7 +110,7 @@ export class SettingsService {
   /**
    * Create a new SettingsService instance
    *
-   * @param dataDir - Absolute path to global data directory (e.g., ~/.automaker)
+   * @param dataDir - Absolute path to global data directory (e.g., ~/.taktician)
    */
   constructor(dataDir: string) {
     this.dataDir = dataDir;
@@ -549,6 +549,9 @@ export class SettingsService {
     // sync it, wiping persisted settings (especially `projects`).
     const sanitizedUpdates: Partial<GlobalSettings> = { ...updates };
     let attemptedProjectWipe = false;
+    const allowProjectWipe =
+      (sanitizedUpdates as Record<string, unknown>).__allowProjectWipe === true;
+    delete (sanitizedUpdates as Record<string, unknown>).__allowProjectWipe;
 
     const ignoreEmptyArrayOverwrite = <K extends keyof GlobalSettings>(key: K): void => {
       const nextVal = sanitizedUpdates[key] as unknown;
@@ -576,9 +579,13 @@ export class SettingsService {
       sanitizedUpdates.projects.length === 0 &&
       currentProjectsLen > 0
     ) {
-      // Only treat as accidental wipe if trashedProjects is also empty
-      // (If projects are moved to trash, they appear in trashedProjects)
-      if (newTrashedProjectsLen === 0) {
+      if (allowProjectWipe) {
+        logger.info('[WIPE_PROTECTION] Project wipe explicitly allowed for this update request', {
+          currentProjectsLen,
+        });
+      } else if (newTrashedProjectsLen === 0) {
+        // Only treat as accidental wipe if trashedProjects is also empty
+        // (If projects are moved to trash, they appear in trashedProjects)
         logger.warn(
           '[WIPE_PROTECTION] Attempted to set projects to empty array with no trash! Ignoring update.',
           {
@@ -822,7 +829,7 @@ export class SettingsService {
   /**
    * Get project-specific settings with defaults applied
    *
-   * Reads from {projectPath}/.automaker/settings.json. If file doesn't exist,
+   * Reads from {projectPath}/.taktician/settings.json. If file doesn't exist,
    * returns defaults. Project settings are optional - missing values fall back
    * to global settings on the UI side.
    *
@@ -842,7 +849,7 @@ export class SettingsService {
   /**
    * Update project-specific settings with partial changes
    *
-   * Performs a deep merge on boardBackground. Creates .automaker directory
+   * Performs a deep merge on boardBackground. Creates .taktician directory
    * in project if needed. Updates are written atomically.
    *
    * @param projectPath - Absolute path to project directory
@@ -853,7 +860,7 @@ export class SettingsService {
     projectPath: string,
     updates: Partial<ProjectSettings>
   ): Promise<ProjectSettings> {
-    await ensureAutomakerDir(projectPath);
+    await ensureTakticianDir(projectPath);
     const settingsPath = getProjectSettingsPath(projectPath);
 
     const current = await this.getProjectSettings(projectPath);
@@ -926,7 +933,7 @@ export class SettingsService {
    * Check if project settings file exists
    *
    * @param projectPath - Absolute path to project directory
-   * @returns Promise resolving to true if {projectPath}/.automaker/settings.json exists
+   * @returns Promise resolving to true if {projectPath}/.taktician/settings.json exists
    */
   async hasProjectSettings(projectPath: string): Promise<boolean> {
     const settingsPath = getProjectSettingsPath(projectPath);
@@ -949,11 +956,11 @@ export class SettingsService {
    * @returns Promise resolving to migration result with success status and error list
    */
   async migrateFromLocalStorage(localStorageData: {
-    'automaker-storage'?: string;
-    'automaker-setup'?: string;
+    'taktician-storage'?: string;
+    'taktician-setup'?: string;
     'worktree-panel-collapsed'?: string;
     'file-browser-recent-folders'?: string;
-    'automaker:lastProjectDir'?: string;
+    'taktician:lastProjectDir'?: string;
   }): Promise<{
     success: boolean;
     migratedGlobalSettings: boolean;
@@ -967,25 +974,25 @@ export class SettingsService {
     let migratedProjectCount = 0;
 
     try {
-      // Parse the main automaker-storage
+      // Parse the main taktician-storage
       let appState: Record<string, unknown> = {};
-      if (localStorageData['automaker-storage']) {
+      if (localStorageData['taktician-storage']) {
         try {
-          const parsed = JSON.parse(localStorageData['automaker-storage']);
+          const parsed = JSON.parse(localStorageData['taktician-storage']);
           appState = parsed.state || parsed;
         } catch (e) {
-          errors.push(`Failed to parse automaker-storage: ${e}`);
+          errors.push(`Failed to parse taktician-storage: ${e}`);
         }
       }
 
       // Parse setup wizard state (previously stored in localStorage)
       let setupState: Record<string, unknown> = {};
-      if (localStorageData['automaker-setup']) {
+      if (localStorageData['taktician-setup']) {
         try {
-          const parsed = JSON.parse(localStorageData['automaker-setup']);
+          const parsed = JSON.parse(localStorageData['taktician-setup']);
           setupState = parsed.state || parsed;
         } catch (e) {
-          errors.push(`Failed to parse automaker-setup: ${e}`);
+          errors.push(`Failed to parse taktician-setup: ${e}`);
         }
       }
 
@@ -1032,8 +1039,8 @@ export class SettingsService {
       };
 
       // Add direct localStorage values
-      if (localStorageData['automaker:lastProjectDir']) {
-        globalSettings.lastProjectDir = localStorageData['automaker:lastProjectDir'];
+      if (localStorageData['taktician:lastProjectDir']) {
+        globalSettings.lastProjectDir = localStorageData['taktician:lastProjectDir'];
       }
 
       if (localStorageData['file-browser-recent-folders']) {
@@ -1185,17 +1192,17 @@ export class SettingsService {
 
     switch (process.platform) {
       case 'darwin':
-        // macOS: ~/Library/Application Support/Automaker
-        return path.join(homeDir, 'Library', 'Application Support', 'Automaker');
+        // macOS: ~/Library/Application Support/Taktician
+        return path.join(homeDir, 'Library', 'Application Support', 'Taktician');
       case 'win32':
-        // Windows: %APPDATA%\Automaker
+        // Windows: %APPDATA%\Taktician
         return path.join(
           process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'),
-          'Automaker'
+          'Taktician'
         );
       default:
-        // Linux and others: ~/.config/Automaker
-        return path.join(process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config'), 'Automaker');
+        // Linux and others: ~/.config/Taktician
+        return path.join(process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config'), 'Taktician');
     }
   }
 
@@ -1203,7 +1210,7 @@ export class SettingsService {
    * Migrate entire data directory from legacy Electron userData location to new shared data directory
    *
    * This handles the migration from when Electron stored data in the platform-specific
-   * userData directory (e.g., ~/.config/Automaker) to the new shared ./data directory.
+   * userData directory (e.g., ~/.config/Taktician) to the new shared ./data directory.
    *
    * Migration only occurs if:
    * 1. The new location does NOT have settings.json

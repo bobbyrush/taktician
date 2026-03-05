@@ -2,11 +2,11 @@
  * Git command execution utilities
  */
 
-import { spawnProcess } from '@automaker/platform';
+import { spawnProcess } from '@taktician/platform';
 
 /**
  * Execute git command with array arguments to prevent command injection.
- * Uses spawnProcess from @automaker/platform for secure, cross-platform execution.
+ * Uses spawnProcess from @taktician/platform for secure, cross-platform execution.
  *
  * @param args - Array of git command arguments (e.g., ['worktree', 'add', path])
  * @param cwd - Working directory to execute the command in

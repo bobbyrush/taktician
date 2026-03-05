@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import type { Project, TrashedProject } from '@/lib/electron';
 import { saveProjects, saveTrashedProjects } from '@/lib/electron';
 import { getHttpApiClient } from '@/lib/http-api-client';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 // Note: setItem/getItem moved to ./utils/theme-utils.ts
 import { UI_SANS_FONT_OPTIONS, UI_MONO_FONT_OPTIONS } from '@/config/ui-font-options';
 import { loadFont } from '@/styles/font-imports';
@@ -23,7 +23,7 @@ import type {
   ParsedTask,
   PlanSpec,
   FeatureTemplate,
-} from '@automaker/types';
+} from '@taktician/types';
 import {
   getAllCursorModelIds,
   getAllCodexModelIds,
@@ -37,7 +37,7 @@ import {
   DEFAULT_MAX_CONCURRENCY,
   DEFAULT_GLOBAL_SETTINGS,
   getThinkingLevelsForModel,
-} from '@automaker/types';
+} from '@taktician/types';
 
 // Import types from modular type files
 import {
@@ -120,7 +120,7 @@ const logger = createLogger('AppStore');
 const OPENCODE_BEDROCK_PROVIDER_ID = 'amazon-bedrock';
 const OPENCODE_BEDROCK_MODEL_PREFIX = `${OPENCODE_BEDROCK_PROVIDER_ID}/`;
 
-// Re-export types from @automaker/types for convenience
+// Re-export types from @taktician/types for convenience
 export type {
   ModelAlias,
   PlanningMode,
@@ -232,7 +232,7 @@ function getInitialUIState(): {
   collapsedNavSections: Record<string, boolean>;
 } {
   try {
-    const raw = localStorage.getItem('automaker-ui-cache');
+    const raw = localStorage.getItem('taktician-ui-cache');
     if (raw) {
       const wrapper = JSON.parse(raw);
       // zustand/persist wraps state under a "state" key
@@ -1810,7 +1810,13 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       },
     })),
 
-  addTerminalToLayout: (sessionId, direction = 'horizontal', _targetSessionId, branchName) => {
+  addTerminalToLayout: (
+    sessionId,
+    direction = 'horizontal',
+    _targetSessionId,
+    branchName,
+    connection
+  ) => {
     set((state) => {
       const { tabs, activeTabId } = state.terminalState;
 
@@ -1824,7 +1830,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
               {
                 id: newTabId,
                 name: 'Terminal 1',
-                layout: { type: 'terminal' as const, sessionId, branchName },
+                layout: { type: 'terminal' as const, sessionId, branchName, connection },
               },
             ],
             activeTabId: newTabId,
@@ -1844,7 +1850,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
             ...state.terminalState,
             tabs: tabs.map((t) =>
               t.id === activeTabId
-                ? { ...t, layout: { type: 'terminal' as const, sessionId, branchName } }
+                ? { ...t, layout: { type: 'terminal' as const, sessionId, branchName, connection } }
                 : t
             ),
             activeSessionId: sessionId,
@@ -1857,7 +1863,10 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         type: 'split',
         id: generateSplitId(),
         direction,
-        panels: [activeTab.layout, { type: 'terminal' as const, sessionId, branchName }],
+        panels: [
+          activeTab.layout,
+          { type: 'terminal' as const, sessionId, branchName, connection },
+        ],
       };
 
       return {
@@ -2293,13 +2302,18 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     });
   },
 
-  addTerminalToTab: (sessionId, tabId, direction = 'horizontal', branchName) => {
+  addTerminalToTab: (sessionId, tabId, direction = 'horizontal', branchName, connection) => {
     set((state) => {
       const { tabs } = state.terminalState;
       const targetTab = tabs.find((t) => t.id === tabId);
       if (!targetTab) return state;
 
-      const newPanel: TerminalPanelContent = { type: 'terminal', sessionId, branchName };
+      const newPanel: TerminalPanelContent = {
+        type: 'terminal',
+        sessionId,
+        branchName,
+        connection,
+      };
 
       if (!targetTab.layout) {
         return {
@@ -2393,6 +2407,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
           fontSize: layout.fontSize,
           sessionId: layout.sessionId,
           branchName: layout.branchName,
+          connection: layout.connection,
         };
       }
       if (layout.type === 'testRunner') {

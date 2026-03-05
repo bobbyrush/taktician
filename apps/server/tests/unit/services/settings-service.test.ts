@@ -353,9 +353,9 @@ describe('settings-service.ts', () => {
         theme: 'light',
         useWorktrees: true,
       };
-      const automakerDir = path.join(testProjectDir, '.automaker');
-      await fs.mkdir(automakerDir, { recursive: true });
-      const settingsPath = path.join(automakerDir, 'settings.json');
+      const takticianDir = path.join(testProjectDir, '.taktician');
+      await fs.mkdir(takticianDir, { recursive: true });
+      const settingsPath = path.join(takticianDir, 'settings.json');
       await fs.writeFile(settingsPath, JSON.stringify(customSettings, null, 2));
 
       const settings = await settingsService.getProjectSettings(testProjectDir);
@@ -368,9 +368,9 @@ describe('settings-service.ts', () => {
         version: PROJECT_SETTINGS_VERSION,
         theme: 'dark',
       };
-      const automakerDir = path.join(testProjectDir, '.automaker');
-      await fs.mkdir(automakerDir, { recursive: true });
-      const settingsPath = path.join(automakerDir, 'settings.json');
+      const takticianDir = path.join(testProjectDir, '.taktician');
+      await fs.mkdir(takticianDir, { recursive: true });
+      const settingsPath = path.join(takticianDir, 'settings.json');
       await fs.writeFile(settingsPath, JSON.stringify(partialSettings, null, 2));
 
       const settings = await settingsService.getProjectSettings(testProjectDir);
@@ -392,8 +392,8 @@ describe('settings-service.ts', () => {
       expect(updated.useWorktrees).toBe(true);
       expect(updated.version).toBe(PROJECT_SETTINGS_VERSION);
 
-      const automakerDir = path.join(testProjectDir, '.automaker');
-      const settingsPath = path.join(automakerDir, 'settings.json');
+      const takticianDir = path.join(testProjectDir, '.taktician');
+      const settingsPath = path.join(takticianDir, 'settings.json');
       const fileContent = await fs.readFile(settingsPath, 'utf-8');
       const saved = JSON.parse(fileContent);
       expect(saved.theme).toBe('light');
@@ -406,9 +406,9 @@ describe('settings-service.ts', () => {
         theme: 'dark',
         useWorktrees: false,
       };
-      const automakerDir = path.join(testProjectDir, '.automaker');
-      await fs.mkdir(automakerDir, { recursive: true });
-      const settingsPath = path.join(automakerDir, 'settings.json');
+      const takticianDir = path.join(testProjectDir, '.taktician');
+      await fs.mkdir(takticianDir, { recursive: true });
+      const settingsPath = path.join(takticianDir, 'settings.json');
       await fs.writeFile(settingsPath, JSON.stringify(initial, null, 2));
 
       const updates: Partial<ProjectSettings> = {
@@ -435,9 +435,9 @@ describe('settings-service.ts', () => {
           hideScrollbar: false,
         },
       };
-      const automakerDir = path.join(testProjectDir, '.automaker');
-      await fs.mkdir(automakerDir, { recursive: true });
-      const settingsPath = path.join(automakerDir, 'settings.json');
+      const takticianDir = path.join(testProjectDir, '.taktician');
+      await fs.mkdir(takticianDir, { recursive: true });
+      const settingsPath = path.join(takticianDir, 'settings.json');
       await fs.writeFile(settingsPath, JSON.stringify(initial, null, 2));
 
       const updates: Partial<ProjectSettings> = {
@@ -453,13 +453,13 @@ describe('settings-service.ts', () => {
       expect(updated.boardBackground?.columnOpacity).toBe(0.9);
     });
 
-    it('should create .automaker directory if it does not exist', async () => {
+    it('should create .taktician directory if it does not exist', async () => {
       const newProjectDir = path.join(os.tmpdir(), `new-project-${Date.now()}`);
 
       await settingsService.updateProjectSettings(newProjectDir, { theme: 'light' });
 
-      const automakerDir = path.join(newProjectDir, '.automaker');
-      const stats = await fs.stat(automakerDir);
+      const takticianDir = path.join(newProjectDir, '.taktician');
+      const stats = await fs.stat(takticianDir);
       expect(stats.isDirectory()).toBe(true);
 
       await fs.rm(newProjectDir, { recursive: true, force: true });
@@ -482,7 +482,7 @@ describe('settings-service.ts', () => {
   describe('migrateFromLocalStorage', () => {
     it('should migrate global settings from localStorage data', async () => {
       const localStorageData = {
-        'automaker-storage': JSON.stringify({
+        'taktician-storage': JSON.stringify({
           state: {
             theme: 'light',
             sidebarOpen: false,
@@ -506,7 +506,7 @@ describe('settings-service.ts', () => {
 
     it('should migrate credentials from localStorage data', async () => {
       const localStorageData = {
-        'automaker-storage': JSON.stringify({
+        'taktician-storage': JSON.stringify({
           state: {
             apiKeys: {
               anthropic: 'sk-test-key',
@@ -526,7 +526,7 @@ describe('settings-service.ts', () => {
 
     it('should migrate project settings from localStorage data', async () => {
       const localStorageData = {
-        'automaker-storage': JSON.stringify({
+        'taktician-storage': JSON.stringify({
           state: {
             projects: [
               {
@@ -564,7 +564,7 @@ describe('settings-service.ts', () => {
 
     it('should handle direct localStorage values', async () => {
       const localStorageData = {
-        'automaker:lastProjectDir': '/path/to/project',
+        'taktician:lastProjectDir': '/path/to/project',
         'file-browser-recent-folders': JSON.stringify(['/path1', '/path2']),
         'worktree-panel-collapsed': 'true',
       };
@@ -580,7 +580,7 @@ describe('settings-service.ts', () => {
 
     it('should handle invalid JSON gracefully', async () => {
       const localStorageData = {
-        'automaker-storage': 'invalid json',
+        'taktician-storage': 'invalid json',
         'file-browser-recent-folders': 'invalid json',
       };
 
@@ -601,7 +601,7 @@ describe('settings-service.ts', () => {
 
         const readOnlyService = new SettingsService(readOnlyDir);
         const localStorageData = {
-          'automaker-storage': JSON.stringify({
+          'taktician-storage': JSON.stringify({
             state: { theme: 'light' },
           }),
         };

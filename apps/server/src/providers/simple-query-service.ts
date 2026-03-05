@@ -21,8 +21,8 @@ import type {
   ClaudeApiProfile,
   ClaudeCompatibleProvider,
   Credentials,
-} from '@automaker/types';
-import { stripProviderPrefix } from '@automaker/types';
+} from '@taktician/types';
+import { stripProviderPrefix } from '@taktician/types';
 
 /**
  * Options for simple query execution

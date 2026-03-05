@@ -7,8 +7,8 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { createLogger, getErrorMessage, isValidRemoteName } from '@automaker/utils';
-import { execGitCommand, getCurrentBranch, getConflictFiles } from '@automaker/git-utils';
+import { createLogger, getErrorMessage, isValidRemoteName } from '@taktician/utils';
+import { execGitCommand, getCurrentBranch, getConflictFiles } from '@taktician/git-utils';
 
 const logger = createLogger('RebaseService');
 

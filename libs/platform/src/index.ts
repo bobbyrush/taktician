@@ -1,11 +1,11 @@
 /**
- * @automaker/platform
- * Platform-specific utilities for AutoMaker
+ * @taktician/platform
+ * Platform-specific utilities for Taktician
  */
 
 // Path utilities
 export {
-  getAutomakerDir,
+  getTakticianDir,
   getFeaturesDir,
   getFeatureDir,
   getFeatureImagesDir,
@@ -25,7 +25,7 @@ export {
   getEventHistoryIndexPath,
   getEventPath,
   ensureEventHistoryDir,
-  ensureAutomakerDir,
+  ensureTakticianDir,
   getGlobalSettingsPath,
   getCredentialsPath,
   getProjectSettingsPath,

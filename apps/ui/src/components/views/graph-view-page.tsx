@@ -14,9 +14,9 @@ import { useAutoMode } from '@/hooks/use-auto-mode';
 import { pathsEqual } from '@/lib/utils';
 import { Spinner } from '@/components/ui/spinner';
 import { getElectronAPI } from '@/lib/electron';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import { toast } from 'sonner';
-import type { BacklogPlanResult } from '@automaker/types';
+import type { BacklogPlanResult } from '@taktician/types';
 
 const logger = createLogger('GraphViewPage');
 
@@ -49,9 +49,10 @@ export function GraphViewPage() {
       setPlanUseSelectedWorktreeBranch: state.setPlanUseSelectedWorktreeBranch,
     }))
   );
+  const isVpsWorkspace = currentProject?.workspaceType === 'vps';
 
   // Ensure worktrees are loaded when landing directly on graph view
-  useWorktrees({ projectPath: currentProject?.path ?? '' });
+  useWorktrees({ projectPath: !isVpsWorkspace ? (currentProject?.path ?? '') : '' });
 
   const worktreesByProject = useAppStore((s) => s.worktreesByProject);
   const worktrees = useMemo(
@@ -113,7 +114,7 @@ export function GraphViewPage() {
 
   useEffect(() => {
     const fetchBranches = async () => {
-      if (!currentProject) {
+      if (!currentProject || isVpsWorkspace) {
         setBranchSuggestions([]);
         return;
       }
@@ -139,7 +140,7 @@ export function GraphViewPage() {
     };
 
     fetchBranches();
-  }, [currentProject, worktreeRefreshKey]);
+  }, [currentProject, isVpsWorkspace, worktreeRefreshKey]);
 
   // Listen for backlog plan events (for background generation)
   useEffect(() => {

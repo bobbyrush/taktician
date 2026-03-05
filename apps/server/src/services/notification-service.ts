@@ -2,18 +2,18 @@
  * Notification Service - Handles reading/writing notifications to JSON files
  *
  * Provides persistent storage for project-level notifications in
- * {projectPath}/.automaker/notifications.json
+ * {projectPath}/.taktician/notifications.json
  *
  * Notifications alert users when:
  * - Features reach specific statuses (waiting_approval, verified)
  * - Long-running operations complete (spec generation)
  */
 
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@taktician/utils';
 import * as secureFs from '../lib/secure-fs.js';
-import { getNotificationsPath, ensureAutomakerDir } from '@automaker/platform';
-import type { Notification, NotificationsFile, NotificationType } from '@automaker/types';
-import { DEFAULT_NOTIFICATIONS_FILE } from '@automaker/types';
+import { getNotificationsPath, ensureTakticianDir } from '@taktician/platform';
+import type { Notification, NotificationsFile, NotificationType } from '@taktician/types';
+import { DEFAULT_NOTIFICATIONS_FILE } from '@taktician/types';
 import type { EventEmitter } from '../lib/events.js';
 import { randomUUID } from 'crypto';
 
@@ -121,8 +121,8 @@ export class NotificationService {
   async createNotification(input: CreateNotificationInput): Promise<Notification> {
     const { projectPath, type, title, message, featureId } = input;
 
-    // Ensure automaker directory exists
-    await ensureAutomakerDir(projectPath);
+    // Ensure taktician directory exists
+    await ensureTakticianDir(projectPath);
 
     const notificationsPath = getNotificationsPath(projectPath);
     const file = await readJsonFile<NotificationsFile>(

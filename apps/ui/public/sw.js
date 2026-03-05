@@ -1,14 +1,14 @@
-// Automaker Service Worker - Optimized for mobile PWA loading performance
+// Taktician Service Worker - Optimized for mobile PWA loading performance
 // NOTE: CACHE_NAME is injected with a build hash at build time by the swCacheBuster
 // Vite plugin (see vite.config.mts). In development it stays as-is; in production
-// builds it becomes e.g. 'automaker-v5-a1b2c3d4' for automatic cache invalidation.
-const CACHE_NAME = 'automaker-v5'; // replaced at build time → 'automaker-v5-<hash>'
+// builds it becomes e.g. 'taktician-v5-a1b2c3d4' for automatic cache invalidation.
+const CACHE_NAME = 'taktician-v5'; // replaced at build time → 'taktician-v5-<hash>'
 
 // Separate cache for immutable hashed assets (long-lived)
-const IMMUTABLE_CACHE = 'automaker-immutable-v2';
+const IMMUTABLE_CACHE = 'taktician-immutable-v2';
 
 // Separate cache for API responses (short-lived, stale-while-revalidate on mobile)
-const API_CACHE = 'automaker-api-v1';
+const API_CACHE = 'taktician-api-v1';
 
 // Assets to cache on install (app shell for instant loading)
 const SHELL_ASSETS = [
@@ -17,7 +17,7 @@ const SHELL_ASSETS = [
   '/manifest.json',
   '/logo.png',
   '/logo_larger.png',
-  '/automaker.svg',
+  '/taktician.svg',
   '/favicon.ico',
 ];
 
@@ -30,7 +30,7 @@ const CRITICAL_ASSETS = [];
 // Whether mobile caching is enabled (set via message from main thread).
 // Persisted to Cache Storage so it survives aggressive SW termination on mobile.
 let mobileMode = false;
-const MOBILE_MODE_CACHE_KEY = 'automaker-sw-config';
+const MOBILE_MODE_CACHE_KEY = 'taktician-sw-config';
 const MOBILE_MODE_URL = '/sw-config/mobile-mode';
 
 /**

@@ -4,7 +4,7 @@
 
 import type { Request, Response } from 'express';
 import type { EventEmitter } from '../../../lib/events.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@taktician/utils';
 import {
   getSpecRegenerationStatus,
   setRunningState,

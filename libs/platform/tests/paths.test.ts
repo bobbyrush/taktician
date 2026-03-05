@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import {
-  getAutomakerDir,
+  getTakticianDir,
   getFeaturesDir,
   getFeatureDir,
   getFeatureImagesDir,
@@ -13,7 +13,7 @@ import {
   getWorktreesDir,
   getAppSpecPath,
   getBranchTrackingPath,
-  ensureAutomakerDir,
+  ensureTakticianDir,
   getGlobalSettingsPath,
   getCredentialsPath,
   getProjectSettingsPath,
@@ -43,61 +43,61 @@ describe('paths.ts', () => {
   });
 
   describe('Project-level path construction', () => {
-    it('should return automaker directory path', () => {
-      const result = getAutomakerDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker'));
+    it('should return taktician directory path', () => {
+      const result = getTakticianDir(projectPath);
+      expect(result).toBe(path.join(projectPath, '.taktician'));
     });
 
     it('should return features directory path', () => {
       const result = getFeaturesDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'features'));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'features'));
     });
 
     it('should return feature directory path', () => {
       const featureId = 'auth-feature';
       const result = getFeatureDir(projectPath, featureId);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'features', featureId));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'features', featureId));
     });
 
     it('should return feature images directory path', () => {
       const featureId = 'auth-feature';
       const result = getFeatureImagesDir(projectPath, featureId);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'features', featureId, 'images'));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'features', featureId, 'images'));
     });
 
     it('should return board directory path', () => {
       const result = getBoardDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'board'));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'board'));
     });
 
     it('should return images directory path', () => {
       const result = getImagesDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'images'));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'images'));
     });
 
     it('should return context directory path', () => {
       const result = getContextDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'context'));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'context'));
     });
 
     it('should return worktrees directory path', () => {
       const result = getWorktreesDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'worktrees'));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'worktrees'));
     });
 
     it('should return app spec file path', () => {
       const result = getAppSpecPath(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'app_spec.txt'));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'app_spec.txt'));
     });
 
     it('should return branch tracking file path', () => {
       const result = getBranchTrackingPath(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'active-branches.json'));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'active-branches.json'));
     });
 
     it('should return project settings file path', () => {
       const result = getProjectSettingsPath(projectPath);
-      expect(result).toBe(path.join(projectPath, '.automaker', 'settings.json'));
+      expect(result).toBe(path.join(projectPath, '.taktician', 'settings.json'));
     });
   });
 
@@ -114,21 +114,21 @@ describe('paths.ts', () => {
   });
 
   describe('Directory creation', () => {
-    it('should create automaker directory', async () => {
-      const automakerDir = await ensureAutomakerDir(projectPath);
+    it('should create taktician directory', async () => {
+      const takticianDir = await ensureTakticianDir(projectPath);
 
-      expect(automakerDir).toBe(path.join(projectPath, '.automaker'));
+      expect(takticianDir).toBe(path.join(projectPath, '.taktician'));
 
-      const stats = await fs.stat(automakerDir);
+      const stats = await fs.stat(takticianDir);
       expect(stats.isDirectory()).toBe(true);
     });
 
-    it('should be idempotent when creating automaker directory', async () => {
+    it('should be idempotent when creating taktician directory', async () => {
       // Create directory first time
-      const firstResult = await ensureAutomakerDir(projectPath);
+      const firstResult = await ensureTakticianDir(projectPath);
 
       // Create directory second time
-      const secondResult = await ensureAutomakerDir(projectPath);
+      const secondResult = await ensureTakticianDir(projectPath);
 
       expect(firstResult).toBe(secondResult);
 
@@ -162,9 +162,9 @@ describe('paths.ts', () => {
       const deepProjectPath = path.join(tempDir, 'nested', 'deep', 'project');
       await fs.mkdir(deepProjectPath, { recursive: true });
 
-      const automakerDir = await ensureAutomakerDir(deepProjectPath);
+      const takticianDir = await ensureTakticianDir(deepProjectPath);
 
-      const stats = await fs.stat(automakerDir);
+      const stats = await fs.stat(takticianDir);
       expect(stats.isDirectory()).toBe(true);
     });
   });
@@ -178,8 +178,8 @@ describe('paths.ts', () => {
 
     it('should handle paths with spaces', () => {
       const pathWithSpaces = path.join(tempDir, 'path with spaces');
-      const result = getAutomakerDir(pathWithSpaces);
-      expect(result).toBe(path.join(pathWithSpaces, '.automaker'));
+      const result = getTakticianDir(pathWithSpaces);
+      expect(result).toBe(path.join(pathWithSpaces, '.taktician'));
     });
   });
 
@@ -191,8 +191,8 @@ describe('paths.ts', () => {
       expect(featureDir.startsWith(featuresDir)).toBe(true);
     });
 
-    it('should have all project paths under automaker dir', () => {
-      const automakerDir = getAutomakerDir(projectPath);
+    it('should have all project paths under taktician dir', () => {
+      const takticianDir = getTakticianDir(projectPath);
       const paths = [
         getFeaturesDir(projectPath),
         getBoardDir(projectPath),
@@ -205,7 +205,7 @@ describe('paths.ts', () => {
       ];
 
       paths.forEach((p) => {
-        expect(p.startsWith(automakerDir)).toBe(true);
+        expect(p.startsWith(takticianDir)).toBe(true);
       });
     });
   });

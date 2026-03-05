@@ -5,9 +5,9 @@ import {
   type CodexAuthMethod,
   type ZaiAuthMethod,
 } from '@/store/setup-store';
-import type { GeminiAuthStatus } from '@automaker/types';
+import type { GeminiAuthStatus } from '@taktician/types';
 import { getHttpApiClient } from '@/lib/http-api-client';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 
 const logger = createLogger('ProviderAuthInit');
 

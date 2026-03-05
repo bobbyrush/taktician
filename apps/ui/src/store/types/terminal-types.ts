@@ -1,6 +1,25 @@
+export type TerminalConnectionMeta =
+  | { type: 'local' }
+  | {
+      type: 'ssh';
+      host: string;
+      port: number;
+      username: string;
+      label?: string;
+      identityFile?: string;
+      hostKeyPolicy?: 'accept-new' | 'yes' | 'no';
+    };
+
 // Terminal panel layout types (recursive for splits)
 export type TerminalPanelContent =
-  | { type: 'terminal'; sessionId: string; size?: number; fontSize?: number; branchName?: string }
+  | {
+      type: 'terminal';
+      sessionId: string;
+      size?: number;
+      fontSize?: number;
+      branchName?: string;
+      connection?: TerminalConnectionMeta;
+    }
   | { type: 'testRunner'; sessionId: string; size?: number; worktreePath: string }
   | {
       type: 'split';
@@ -40,7 +59,14 @@ export interface TerminalState {
 // Persisted terminal layout - now includes sessionIds for reconnection
 // Used to restore terminal layout structure when switching projects
 export type PersistedTerminalPanel =
-  | { type: 'terminal'; size?: number; fontSize?: number; sessionId?: string; branchName?: string }
+  | {
+      type: 'terminal';
+      size?: number;
+      fontSize?: number;
+      sessionId?: string;
+      branchName?: string;
+      connection?: TerminalConnectionMeta;
+    }
   | { type: 'testRunner'; size?: number; sessionId?: string; worktreePath?: string }
   | {
       type: 'split';
