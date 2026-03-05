@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import {
   X,
   SplitSquareHorizontal,
@@ -58,6 +58,7 @@ import { useVirtualKeyboardResize } from '@/hooks/use-virtual-keyboard-resize';
 import { MobileTerminalShortcuts } from './mobile-terminal-shortcuts';
 import { applyStickyModifier, type StickyModifier } from './sticky-modifier-keys';
 import { TerminalScriptsDropdown } from './terminal-scripts-dropdown';
+import type { TerminalConnectionMeta } from '@/store/types/terminal-types';
 
 const logger = createLogger('Terminal');
 const NO_STORE_CACHE_MODE: RequestCache = 'no-store';
@@ -106,6 +107,53 @@ interface TerminalPanelProps {
   isMaximized?: boolean;
   onToggleMaximize?: () => void;
   branchName?: string; // Branch name to display in header (from "Open in Terminal" action)
+  connection?: TerminalConnectionMeta;
+}
+
+function normalizeConnectionMeta(raw: unknown): TerminalConnectionMeta | undefined {
+  if (!raw || typeof raw !== 'object') {
+    return undefined;
+  }
+
+  const type = (raw as { type?: unknown }).type;
+  if (type === 'local') {
+    return { type: 'local' };
+  }
+  if (type !== 'ssh') {
+    return undefined;
+  }
+
+  const host = (raw as { host?: unknown }).host;
+  const username = (raw as { username?: unknown }).username;
+  const port = (raw as { port?: unknown }).port;
+  const label = (raw as { label?: unknown }).label;
+  const identityFile = (raw as { identityFile?: unknown }).identityFile;
+  const hostKeyPolicy = (raw as { hostKeyPolicy?: unknown }).hostKeyPolicy;
+
+  if (
+    typeof host !== 'string' ||
+    host.trim().length === 0 ||
+    typeof username !== 'string' ||
+    username.trim().length === 0
+  ) {
+    return undefined;
+  }
+
+  return {
+    type: 'ssh',
+    host: host.trim(),
+    username: username.trim(),
+    port: typeof port === 'number' && Number.isInteger(port) && port > 0 ? port : 22,
+    label: typeof label === 'string' && label.trim().length > 0 ? label.trim() : undefined,
+    identityFile:
+      typeof identityFile === 'string' && identityFile.trim().length > 0
+        ? identityFile.trim()
+        : undefined,
+    hostKeyPolicy:
+      hostKeyPolicy === 'accept-new' || hostKeyPolicy === 'yes' || hostKeyPolicy === 'no'
+        ? hostKeyPolicy
+        : undefined,
+  };
 }
 
 // Type for xterm Terminal - we'll use any since we're dynamically importing
@@ -137,6 +185,7 @@ export function TerminalPanel({
   isMaximized = false,
   onToggleMaximize,
   branchName,
+  connection,
 }: TerminalPanelProps) {
   const navigate = useNavigate();
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -191,6 +240,13 @@ export function TerminalPanel({
   const MAX_RECONNECT_ATTEMPTS = 5;
   const INITIAL_RECONNECT_DELAY = 1000;
   const [processExitCode, setProcessExitCode] = useState<number | null>(null);
+  const [sessionConnection, setSessionConnection] = useState<TerminalConnectionMeta | undefined>(
+    connection
+  );
+
+  useEffect(() => {
+    setSessionConnection(connection);
+  }, [connection]);
 
   // Detect mobile viewport for shortcuts bar
   const isMobile = useIsMobile();
@@ -1187,6 +1243,10 @@ export function TerminalPanel({
               break;
             case 'connected': {
               logger.info(`Session connected: ${msg.shell} in ${msg.cwd}`);
+              const serverConnection = normalizeConnectionMeta(msg.connection);
+              if (serverConnection) {
+                setSessionConnection(serverConnection);
+              }
               // Detect shell type from path
               const shellPath = (msg.shell || '').toLowerCase();
               // Windows shells use backslash paths and include powershell/pwsh/cmd
@@ -1804,7 +1864,7 @@ export function TerminalPanel({
         if (!api.saveImageToTemp) {
           // Fallback path when Electron API is not available (browser mode)
           logger.warn('saveImageToTemp not available, returning fallback path');
-          return `.automaker/images/${Date.now()}_${filename}`;
+          return `.taktician/images/${Date.now()}_${filename}`;
         }
 
         const projectPath = currentProject?.path;
@@ -2030,6 +2090,15 @@ export function TerminalPanel({
             <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-500 shrink-0">
               <GitBranch className="h-2.5 w-2.5 shrink-0" />
               <span>{branchName}</span>
+            </span>
+          )}
+          {sessionConnection?.type === 'ssh' && (
+            <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-500 shrink-0">
+              <span>SSH</span>
+              <span className="truncate max-w-[18rem]">
+                {sessionConnection.label ||
+                  `${sessionConnection.username}@${sessionConnection.host}${sessionConnection.port !== 22 ? `:${sessionConnection.port}` : ''}`}
+              </span>
             </span>
           )}
           {/* Font size indicator - only show when not default */}

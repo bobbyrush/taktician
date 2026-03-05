@@ -51,8 +51,8 @@ interface ProjectSelectorWithOptionsProps {
   setIsProjectPickerOpen: (value: boolean | ((prev: boolean) => boolean)) => void;
   /** Callback to show the delete project confirmation dialog */
   setShowDeleteProjectDialog: (show: boolean) => void;
-  /** Callback to show the remove from automaker confirmation dialog */
-  setShowRemoveFromAutomakerDialog: (show: boolean) => void;
+  /** Callback to show the remove from taktician confirmation dialog */
+  setShowRemoveFromTakticianDialog: (show: boolean) => void;
 }
 
 /**
@@ -76,7 +76,7 @@ export function ProjectSelectorWithOptions({
   isProjectPickerOpen,
   setIsProjectPickerOpen,
   setShowDeleteProjectDialog,
-  setShowRemoveFromAutomakerDialog,
+  setShowRemoveFromTakticianDialog,
 }: ProjectSelectorWithOptionsProps) {
   const projects = useAppStore((s) => s.projects);
   const currentProject = useAppStore((s) => s.currentProject);
@@ -88,14 +88,14 @@ export function ProjectSelectorWithOptions({
   const clearProjectHistory = useAppStore((s) => s.clearProjectHistory);
 
   const shortcuts = useKeyboardShortcutsConfig();
-  // Wrap setCurrentProject to ensure .automaker is initialized before switching
+  // Wrap setCurrentProject to ensure .taktician is initialized before switching
   const setCurrentProjectWithInit = useCallback(
     async (p: Project) => {
       if (p.id === currentProject?.id) {
         return;
       }
       try {
-        // Ensure .automaker directory structure exists before switching
+        // Ensure .taktician directory structure exists before switching
         await initializeProject(p.path);
       } catch (error) {
         console.error('Failed to initialize project during switch:', error);
@@ -406,12 +406,12 @@ export function ProjectSelectorWithOptions({
             {/* Remove / Trash Section */}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => setShowRemoveFromAutomakerDialog(true)}
+              onClick={() => setShowRemoveFromTakticianDialog(true)}
               className="text-muted-foreground focus:text-foreground"
-              data-testid="remove-from-automaker"
+              data-testid="remove-from-taktician"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              <span>Remove from Automaker</span>
+              <span>Remove from Taktician</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setShowDeleteProjectDialog(true)}

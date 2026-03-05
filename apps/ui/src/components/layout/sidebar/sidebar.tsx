@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, startTransition } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { useState, useCallback, useEffect, useMemo, startTransition } from 'react';
+import { createLogger } from '@taktician/utils/logger';
 import { useNavigate, useLocation } from '@tanstack/react-router';
 import { PanelLeftClose, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -7,7 +7,7 @@ import { useAppStore } from '@/store/app-store';
 import { useNotificationsStore } from '@/store/notifications-store';
 import { useKeyboardShortcuts, useKeyboardShortcutsConfig } from '@/hooks/use-keyboard-shortcuts';
 import { getElectronAPI } from '@/lib/electron';
-import { initializeProject, hasAppSpec, hasAutomakerDir } from '@/lib/project-init';
+import { initializeProject, hasAppSpec, hasTakticianDir } from '@/lib/project-init';
 import { toast } from 'sonner';
 import { useIsCompact } from '@/hooks/use-media-query';
 import type { Project } from '@/lib/electron';
@@ -39,11 +39,12 @@ import { EditProjectDialog } from '../project-switcher/components/edit-project-d
 
 // Import shared dialogs
 import { DeleteProjectDialog } from '@/components/views/settings-view/components/delete-project-dialog';
-import { RemoveFromAutomakerDialog } from '@/components/views/settings-view/components/remove-from-automaker-dialog';
+import { RemoveFromTakticianDialog } from '@/components/views/settings-view/components/remove-from-taktician-dialog';
 import { NewProjectModal } from '@/components/dialogs/new-project-modal';
 import { CreateSpecDialog } from '@/components/views/spec-view/dialogs';
 
 const logger = createLogger('Sidebar');
+const SSH_ONLY_MODE = true;
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -73,6 +74,23 @@ export function Sidebar() {
   } = useAppStore();
 
   const isCompact = useIsCompact();
+  const vpsProjects = useMemo(
+    () => projects.filter((project) => project.workspaceType === 'vps'),
+    [projects]
+  );
+
+  useEffect(() => {
+    if (currentProject?.workspaceType === 'vps') {
+      return;
+    }
+    if (vpsProjects.length > 0) {
+      setCurrentProject(vpsProjects[0]);
+      return;
+    }
+    if (currentProject) {
+      setCurrentProject(null);
+    }
+  }, [currentProject, setCurrentProject, vpsProjects]);
 
   // Environment variable flags for hiding sidebar items
   const { hideTerminal, hideRunningAgents, hideContext, hideSpecEditor, hideWiki } =
@@ -93,8 +111,8 @@ export function Sidebar() {
 
   // State for delete project confirmation dialog
   const [showDeleteProjectDialog, setShowDeleteProjectDialog] = useState(false);
-  // State for remove from automaker confirmation dialog
-  const [showRemoveFromAutomakerDialog, setShowRemoveFromAutomakerDialog] = useState(false);
+  // State for remove from taktician confirmation dialog
+  const [showRemoveFromTakticianDialog, setShowRemoveFromTakticianDialog] = useState(false);
 
   // State for trash dialog
   const [showTrashDialog, setShowTrashDialog] = useState(false);
@@ -208,6 +226,13 @@ export function Sidebar() {
    * Opens the system folder selection dialog and initializes the selected project.
    */
   const handleOpenFolder = useCallback(async () => {
+    if (SSH_ONLY_MODE) {
+      toast.error('Open local project is disabled in SSH-only mode', {
+        description: 'Use "Add VPS Workspace" from the left workspace switcher.',
+      });
+      return;
+    }
+
     const api = getElectronAPI();
     const result = await api.openDirectory();
 
@@ -216,7 +241,7 @@ export function Sidebar() {
       const name = path.split(/[/\\]/).filter(Boolean).pop() || 'Untitled Project';
 
       try {
-        const hadAutomakerDir = await hasAutomakerDir(path);
+        const hadTakticianDir = await hasTakticianDir(path);
         const initResult = await initializeProject(path);
 
         if (!initResult.success) {
@@ -229,7 +254,7 @@ export function Sidebar() {
         upsertAndSetCurrentProject(path, name);
         const specExists = await hasAppSpec(path);
 
-        if (!hadAutomakerDir && !specExists) {
+        if (!hadTakticianDir && !specExists) {
           setSetupProjectPath(path);
           setShowSetupDialog(true);
           toast.success('Project opened', {
@@ -237,7 +262,7 @@ export function Sidebar() {
           });
         } else if (initResult.createdFiles && initResult.createdFiles.length > 0) {
           toast.success(initResult.isNewProject ? 'Project initialized' : 'Project updated', {
-            description: `Set up ${initResult.createdFiles.length} file(s) in .automaker`,
+            description: `Set up ${initResult.createdFiles.length} file(s) in .taktician`,
           });
         } else {
           toast.success('Project opened', {
@@ -256,6 +281,13 @@ export function Sidebar() {
   }, [upsertAndSetCurrentProject, navigate, setSetupProjectPath, setShowSetupDialog]);
 
   const handleNewProject = useCallback(() => {
+    if (SSH_ONLY_MODE) {
+      toast.error('Local project creation is disabled in SSH-only mode', {
+        description: 'Use "Add VPS Workspace" from the left workspace switcher.',
+      });
+      return;
+    }
+
     setShowNewProjectModal(true);
   }, [setShowNewProjectModal]);
 
@@ -266,7 +298,7 @@ export function Sidebar() {
     hideContext,
     hideTerminal,
     currentProject,
-    projects,
+    projects: vpsProjects,
     projectHistory,
     navigate,
     toggleSidebar,
@@ -283,14 +315,21 @@ export function Sidebar() {
 
   const switchProjectSafely = useCallback(
     async (targetProject: Project) => {
-      // Ensure .automaker directory structure exists before switching
-      const initResult = await initializeProject(targetProject.path);
-      if (!initResult.success) {
-        logger.error('Failed to initialize project during switch:', initResult.error);
-        toast.warning(
-          `Could not fully initialize project: ${initResult.error ?? 'Unknown error'}. Some features may not work correctly.`
-        );
-        // Continue with switch despite init failure — project may already be partially initialized
+      if (SSH_ONLY_MODE && targetProject.workspaceType !== 'vps') {
+        toast.error('Local projects are disabled in SSH-only mode');
+        return;
+      }
+
+      if (targetProject.workspaceType !== 'vps') {
+        // Ensure .taktician directory structure exists before switching
+        const initResult = await initializeProject(targetProject.path);
+        if (!initResult.success) {
+          logger.error('Failed to initialize project during switch:', initResult.error);
+          toast.warning(
+            `Could not fully initialize project: ${initResult.error ?? 'Unknown error'}. Some features may not work correctly.`
+          );
+          // Continue with switch despite init failure — project may already be partially initialized
+        }
       }
 
       // Batch project switch + navigation to prevent multi-render cascades.
@@ -323,8 +362,8 @@ export function Sidebar() {
         projectIndex = 9;
       }
 
-      if (projectIndex !== null && projectIndex < projects.length) {
-        const targetProject = projects[projectIndex];
+      if (projectIndex !== null && projectIndex < vpsProjects.length) {
+        const targetProject = vpsProjects[projectIndex];
         if (targetProject && targetProject.id !== currentProject?.id) {
           void switchProjectSafely(targetProject);
         }
@@ -333,7 +372,7 @@ export function Sidebar() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [projects, currentProject, switchProjectSafely]);
+  }, [vpsProjects, currentProject, switchProjectSafely]);
 
   const isActiveRoute = (id: string) => {
     const routePath = id === 'welcome' ? '/' : `/${id}`;
@@ -414,7 +453,7 @@ export function Sidebar() {
               onNewProject={handleNewProject}
               onOpenFolder={handleOpenFolder}
               onProjectContextMenu={handleContextMenu}
-              setShowRemoveFromAutomakerDialog={setShowRemoveFromAutomakerDialog}
+              setShowRemoveFromTakticianDialog={setShowRemoveFromTakticianDialog}
             />
           )}
 
@@ -513,10 +552,10 @@ export function Sidebar() {
           onConfirm={moveProjectToTrash}
         />
 
-        {/* Remove from Automaker Confirmation Dialog */}
-        <RemoveFromAutomakerDialog
-          open={showRemoveFromAutomakerDialog}
-          onOpenChange={setShowRemoveFromAutomakerDialog}
+        {/* Remove from Taktician Confirmation Dialog */}
+        <RemoveFromTakticianDialog
+          open={showRemoveFromTakticianDialog}
+          onOpenChange={setShowRemoveFromTakticianDialog}
           project={currentProject}
           onConfirm={removeProject}
         />

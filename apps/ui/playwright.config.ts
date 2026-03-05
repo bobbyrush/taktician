@@ -48,12 +48,12 @@ export default defineConfig({
                     ...process.env,
                     PORT: String(serverPort),
                     // Enable mock agent in CI to avoid real API calls
-                    AUTOMAKER_MOCK_AGENT: mockAgent ? 'true' : 'false',
+                    TAKTICIAN_MOCK_AGENT: mockAgent ? 'true' : 'false',
                     // Set a test API key for web mode authentication
-                    AUTOMAKER_API_KEY:
-                      process.env.AUTOMAKER_API_KEY || 'test-api-key-for-e2e-tests',
+                    TAKTICIAN_API_KEY:
+                      process.env.TAKTICIAN_API_KEY || 'test-api-key-for-e2e-tests',
                     // Hide the API key banner to reduce log noise
-                    AUTOMAKER_HIDE_API_KEY: 'true',
+                    TAKTICIAN_HIDE_API_KEY: 'true',
                     // Explicitly unset ALLOWED_ROOT_DIRECTORY to allow all paths for testing
                     // (prevents inheriting /projects from Docker or other environments)
                     ALLOWED_ROOT_DIRECTORY: '',
@@ -70,10 +70,10 @@ export default defineConfig({
             timeout: 120000,
             env: {
               ...process.env,
-              // Must set AUTOMAKER_WEB_PORT to match the port Playwright waits for
-              AUTOMAKER_WEB_PORT: String(port),
-              // Must set AUTOMAKER_SERVER_PORT so Vite proxy forwards to the correct backend port
-              AUTOMAKER_SERVER_PORT: String(serverPort),
+              // Must set TAKTICIAN_WEB_PORT to match the port Playwright waits for
+              TAKTICIAN_WEB_PORT: String(port),
+              // Must set TAKTICIAN_SERVER_PORT so Vite proxy forwards to the correct backend port
+              TAKTICIAN_SERVER_PORT: String(serverPort),
               VITE_SKIP_SETUP: 'true',
               // Always skip electron plugin during tests - prevents duplicate server spawning
               VITE_SKIP_ELECTRON: 'true',

@@ -14,7 +14,7 @@
  * 6. Returns a promise that resolves when hydration is complete
  *
  * IMPORTANT: localStorage values are intentionally NOT deleted after migration.
- * This allows users to switch back to older versions of Automaker if needed.
+ * This allows users to switch back to older versions of Taktician if needed.
  *
  * Sync functions for incremental updates:
  * - syncSettingsToServer: Writes global settings to file
@@ -23,7 +23,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import { getHttpApiClient, waitForApiKeyInit } from '@/lib/http-api-client';
 import { getItem, setItem } from '@/lib/storage';
 import { sanitizeWorktreeByProject } from '@/lib/settings-utils';
@@ -39,7 +39,7 @@ import {
   migratePhaseModelEntry,
   type GlobalSettings,
   type CursorModelId,
-} from '@automaker/types';
+} from '@taktician/types';
 
 const logger = createLogger('SettingsMigration');
 
@@ -56,7 +56,7 @@ interface MigrationState {
 }
 
 // NOTE: We intentionally do NOT clear any localStorage keys after migration.
-// This allows users to switch back to older versions of Automaker that relied on localStorage.
+// This allows users to switch back to older versions of Taktician that relied on localStorage.
 // The `localStorageMigrated` flag in server settings prevents re-migration on subsequent app loads.
 
 // Global promise that resolves when migration is complete
@@ -109,9 +109,9 @@ export function resetMigrationState(): void {
  * Parse localStorage data into settings object
  *
  * Checks for settings in multiple locations:
- * 1. automaker-settings-cache: Fresh server settings cached from last fetch
- * 2. automaker-storage: Zustand-persisted app store state (legacy)
- * 3. automaker-setup: Setup wizard state (legacy)
+ * 1. taktician-settings-cache: Fresh server settings cached from last fetch
+ * 2. taktician-storage: Zustand-persisted app store state (legacy)
+ * 3. taktician-setup: Setup wizard state (legacy)
  * 4. Standalone keys: worktree-panel-collapsed, file-browser-recent-folders, etc.
  *
  * @returns Merged settings object or null if no settings found
@@ -120,7 +120,7 @@ export function parseLocalStorageSettings(): Partial<GlobalSettings> | null {
   try {
     // First, check for fresh server settings cache (updated whenever server settings are fetched)
     // This prevents stale data when switching between modes
-    const settingsCache = getItem('automaker-settings-cache');
+    const settingsCache = getItem('taktician-settings-cache');
     if (settingsCache) {
       try {
         const cached = JSON.parse(settingsCache) as GlobalSettings;
@@ -135,19 +135,19 @@ export function parseLocalStorageSettings(): Partial<GlobalSettings> | null {
     }
 
     // Fall back to old Zustand persisted storage
-    const automakerStorage = getItem('automaker-storage');
-    if (!automakerStorage) {
+    const takticianStorage = getItem('taktician-storage');
+    if (!takticianStorage) {
       return null;
     }
 
-    const parsed = JSON.parse(automakerStorage) as Record<string, unknown>;
+    const parsed = JSON.parse(takticianStorage) as Record<string, unknown>;
     // Zustand persist stores state under 'state' key
     const state = (parsed.state as Record<string, unknown> | undefined) || parsed;
 
     // Setup wizard state (previously stored in its own persist key)
-    const automakerSetup = getItem('automaker-setup');
-    const setupParsed = automakerSetup
-      ? (JSON.parse(automakerSetup) as Record<string, unknown>)
+    const takticianSetup = getItem('taktician-setup');
+    const setupParsed = takticianSetup
+      ? (JSON.parse(takticianSetup) as Record<string, unknown>)
       : null;
     const setupState =
       (setupParsed?.state as Record<string, unknown> | undefined) || setupParsed || {};
@@ -155,7 +155,7 @@ export function parseLocalStorageSettings(): Partial<GlobalSettings> | null {
     // Also check for standalone localStorage keys
     const worktreePanelCollapsed = getItem('worktree-panel-collapsed');
     const recentFolders = getItem('file-browser-recent-folders');
-    const lastProjectDir = getItem('automaker:lastProjectDir');
+    const lastProjectDir = getItem('taktician:lastProjectDir');
 
     return {
       setupComplete: setupState.setupComplete as boolean,
@@ -543,7 +543,7 @@ export function useSettingsMigration(): MigrationState {
             // Update localStorage with fresh server data to keep cache in sync
             // This prevents stale localStorage data from being used when switching between modes
             try {
-              setItem('automaker-settings-cache', JSON.stringify(serverSettings));
+              setItem('taktician-settings-cache', JSON.stringify(serverSettings));
               logger.debug('Updated localStorage with fresh server settings');
             } catch (storageError) {
               logger.warn('Failed to update localStorage cache:', storageError);
@@ -602,7 +602,7 @@ export function useSettingsMigration(): MigrationState {
             if (result.success) {
               logger.info('Synced merged settings to server with migration marker');
               // NOTE: We intentionally do NOT clear localStorage values
-              // This allows users to switch back to older versions of Automaker
+              // This allows users to switch back to older versions of Taktician
             } else {
               logger.warn('Failed to sync merged settings to server:', result.error);
             }
@@ -675,8 +675,10 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
     (modelId) => !modelId.startsWith('amazon-bedrock/')
   );
 
+  // SSH-only mode: keep VPS workspace projects only.
+  const vpsProjectRefs = (settings.projects ?? []).filter((ref) => ref.workspaceType === 'vps');
   // Convert ProjectRef[] to Project[] (minimal data, features will be loaded separately)
-  const projects = (settings.projects ?? []).map((ref) => ({
+  const projects = vpsProjectRefs.map((ref) => ({
     id: ref.id,
     name: ref.name,
     path: ref.path,
@@ -687,6 +689,9 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
     isFavorite: ref.isFavorite,
     icon: ref.icon,
     customIconPath: ref.customIconPath,
+    workspaceType: ref.workspaceType,
+    vpsProfileId: ref.vpsProfileId,
+    remotePath: ref.remotePath,
     features: [], // Features are loaded separately when project is opened
   }));
 

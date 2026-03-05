@@ -153,8 +153,8 @@ export const CSS_SELECTORS = {
  * localStorage keys used by the application
  */
 export const STORAGE_KEYS = {
-  appStorage: 'automaker-storage',
-  setupStorage: 'automaker-setup',
+  appStorage: 'taktician-storage',
+  setupStorage: 'taktician-setup',
 } as const;
 
 // ============================================================================

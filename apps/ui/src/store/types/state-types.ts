@@ -24,7 +24,7 @@ import type {
   ThinkingLevel,
   ReasoningEffort,
   FeatureTemplate,
-} from '@automaker/types';
+} from '@taktician/types';
 
 import type {
   ViewMode,
@@ -35,7 +35,12 @@ import type {
 } from './ui-types';
 import type { ApiKeys } from './settings-types';
 import type { ChatMessage, ChatSession } from './chat-types';
-import type { TerminalState, TerminalPanelContent, PersistedTerminalState } from './terminal-types';
+import type {
+  TerminalState,
+  TerminalPanelContent,
+  PersistedTerminalState,
+  TerminalConnectionMeta,
+} from './terminal-types';
 import type { Feature, ProjectAnalysis } from './project-types';
 import type { ClaudeUsage, CodexUsage, ZaiUsage, GeminiUsage } from './usage-types';
 
@@ -728,7 +733,8 @@ export interface AppActions {
     sessionId: string,
     direction?: 'horizontal' | 'vertical',
     targetSessionId?: string,
-    branchName?: string
+    branchName?: string,
+    connection?: TerminalConnectionMeta
   ) => void;
   removeTerminalFromLayout: (sessionId: string) => void;
   swapTerminals: (sessionId1: string, sessionId2: string) => void;
@@ -755,7 +761,8 @@ export interface AppActions {
     sessionId: string,
     tabId: string,
     direction?: 'horizontal' | 'vertical',
-    branchName?: string
+    branchName?: string,
+    connection?: TerminalConnectionMeta
   ) => void;
   setTerminalTabLayout: (
     tabId: string,

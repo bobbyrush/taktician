@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import {
   DndContext,
@@ -34,7 +34,7 @@ import type {
   BacklogPlanResult,
   FeatureStatusWithPipeline,
   FeatureTemplate,
-} from '@automaker/types';
+} from '@taktician/types';
 import { pathsEqual } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -44,7 +44,7 @@ import {
 } from '@/components/dialogs';
 import { useShallow } from 'zustand/react/shallow';
 import { useAutoMode } from '@/hooks/use-auto-mode';
-import { resolveModelString } from '@automaker/model-resolver';
+import { resolveModelString } from '@taktician/model-resolver';
 import { useWindowState } from '@/hooks/use-window-state';
 // Board-view specific imports
 import { BoardHeader } from './board-view/board-header';
@@ -155,6 +155,7 @@ export function BoardView() {
   );
   // Also get keyboard shortcuts for the add feature shortcut
   const keyboardShortcuts = useAppStore((state) => state.keyboardShortcuts);
+  const isVpsWorkspace = currentProject?.workspaceType === 'vps';
   // Fetch pipeline config via React Query
   const { data: pipelineConfig } = usePipelineConfig(currentProject?.path);
   const queryClient = useQueryClient();
@@ -320,7 +321,7 @@ export function BoardView() {
   const { isMaximized } = useWindowState();
 
   // Init script events hook - subscribe to worktree init script events
-  useInitScriptEvents(currentProject?.path ?? null);
+  useInitScriptEvents(!isVpsWorkspace ? (currentProject?.path ?? null) : null);
 
   // Keyboard shortcuts hook will be initialized after actions hook
 
@@ -353,7 +354,7 @@ export function BoardView() {
   // Fetch branches when project changes or worktrees are created/modified
   useEffect(() => {
     const fetchBranches = async () => {
-      if (!currentProject) {
+      if (!currentProject || isVpsWorkspace) {
         setBranchSuggestions([]);
         return;
       }
@@ -379,7 +380,7 @@ export function BoardView() {
     };
 
     fetchBranches();
-  }, [currentProject, worktreeRefreshKey]);
+  }, [currentProject, isVpsWorkspace, worktreeRefreshKey]);
 
   // Custom collision detection that prioritizes specific drop targets (cards, worktrees) over columns
   const collisionDetectionStrategy = useCallback((args: Parameters<CollisionDetection>[0]) => {
@@ -1032,8 +1033,7 @@ export function BoardView() {
         skipTests: defaultSkipTests,
         model: resolveModelString(modelEntry.model) as ModelAlias,
         thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || 'none',
-        reasoningEffort: modelEntry.reasoningEffort,
-        branchName: addFeatureUseSelectedWorktreeBranch ? selectedWorktreeBranch : undefined,
+        branchName: selectedWorktreeBranch || 'main',
         priority: 2,
         planningMode: useAppStore.getState().defaultPlanningMode ?? 'skip',
         requirePlanApproval: useAppStore.getState().defaultRequirePlanApproval ?? false,
@@ -1067,8 +1067,7 @@ export function BoardView() {
         skipTests: defaultSkipTests,
         model: resolveModelString(modelEntry.model) as ModelAlias,
         thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || 'none',
-        reasoningEffort: modelEntry.reasoningEffort,
-        branchName: addFeatureUseSelectedWorktreeBranch ? selectedWorktreeBranch : undefined,
+        branchName: selectedWorktreeBranch || 'main',
         priority: 2,
         planningMode: useAppStore.getState().defaultPlanningMode ?? 'skip',
         requirePlanApproval: useAppStore.getState().defaultRequirePlanApproval ?? false,
@@ -1678,7 +1677,7 @@ export function BoardView() {
           onDragEnd={handleDragEnd}
         >
           {/* Worktree Panel - conditionally rendered based on visibility setting */}
-          {(worktreePanelVisibleByProject[currentProject.path] ?? true) && (
+          {!isVpsWorkspace && (worktreePanelVisibleByProject[currentProject.path] ?? true) && (
             <WorktreePanel
               refreshTrigger={worktreeRefreshKey}
               projectPath={currentProject.path}
@@ -2273,7 +2272,7 @@ export function BoardView() {
       )}
 
       {/* Init Script Indicator - floating overlay for worktree init script status */}
-      {getShowInitScriptIndicator(currentProject.path) && (
+      {!isVpsWorkspace && getShowInitScriptIndicator(currentProject.path) && (
         <InitScriptIndicator projectPath={currentProject.path} />
       )}
     </div>

@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -19,6 +20,9 @@ import {
   Palette,
   Type,
   X,
+  Pencil,
+  Trash2,
+  Server,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
@@ -28,6 +32,32 @@ import { DEFAULT_FONT_VALUE } from '@/config/ui-font-options';
 import { useAvailableTerminals } from '@/components/views/board-view/worktree-panel/hooks/use-available-terminals';
 import { getTerminalIcon } from '@/components/icons/terminal-icons';
 import { TerminalConfigSection } from './terminal-config-section';
+import { useGlobalSettings } from '@/hooks/queries/use-settings';
+import { useUpdateGlobalSettings } from '@/hooks/mutations/use-settings-mutations';
+import type { SshHostKeyPolicy, VpsProfile } from '@taktician/types';
+
+const DEFAULT_SSH_PORT = 22;
+const DEFAULT_HOST_KEY_POLICY: SshHostKeyPolicy = 'accept-new';
+
+interface VpsProfileDraft {
+  name: string;
+  host: string;
+  port: string;
+  username: string;
+  identityFile: string;
+  hostKeyPolicy: SshHostKeyPolicy;
+}
+
+function createEmptyVpsProfileDraft(): VpsProfileDraft {
+  return {
+    name: '',
+    host: '',
+    port: String(DEFAULT_SSH_PORT),
+    username: '',
+    identityFile: '',
+    hostKeyPolicy: DEFAULT_HOST_KEY_POLICY,
+  };
+}
 
 export function TerminalSection() {
   const {
@@ -59,6 +89,112 @@ export function TerminalSection() {
 
   // Get available external terminals
   const { terminals, isRefreshing, refresh } = useAvailableTerminals();
+  const { data: globalSettings } = useGlobalSettings();
+  const updateGlobalSettings = useUpdateGlobalSettings({ showSuccessToast: false });
+  const vpsProfiles = globalSettings?.vpsProfiles ?? [];
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+  const [profileDraft, setProfileDraft] = useState<VpsProfileDraft>(createEmptyVpsProfileDraft);
+
+  const isEditingProfile = editingProfileId !== null;
+  const canSaveProfile = useMemo(() => {
+    return (
+      profileDraft.name.trim().length > 0 &&
+      profileDraft.host.trim().length > 0 &&
+      profileDraft.username.trim().length > 0 &&
+      profileDraft.port.trim().length > 0
+    );
+  }, [profileDraft.host, profileDraft.name, profileDraft.port, profileDraft.username]);
+
+  const resetProfileEditor = () => {
+    setEditingProfileId(null);
+    setProfileDraft(createEmptyVpsProfileDraft());
+  };
+
+  const startEditingProfile = (profile: VpsProfile) => {
+    setEditingProfileId(profile.id);
+    setProfileDraft({
+      name: profile.name,
+      host: profile.host,
+      port: String(profile.port ?? DEFAULT_SSH_PORT),
+      username: profile.username,
+      identityFile: profile.identityFile ?? '',
+      hostKeyPolicy: profile.hostKeyPolicy ?? DEFAULT_HOST_KEY_POLICY,
+    });
+  };
+
+  const saveVpsProfile = () => {
+    const name = profileDraft.name.trim();
+    const host = profileDraft.host.trim();
+    const username = profileDraft.username.trim();
+    const identityFile = profileDraft.identityFile.trim();
+    const parsedPort = Number.parseInt(profileDraft.port.trim(), 10);
+
+    if (!name) {
+      toast.error('Profile name is required');
+      return;
+    }
+    if (!host || host.includes('\0') || /\s/.test(host)) {
+      toast.error('Host is invalid', {
+        description: 'Host cannot be empty and must not contain spaces.',
+      });
+      return;
+    }
+    if (!username || username.includes('\0') || /\s/.test(username)) {
+      toast.error('Username is invalid', {
+        description: 'Username cannot be empty and must not contain spaces.',
+      });
+      return;
+    }
+    if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
+      toast.error('Port must be an integer between 1 and 65535');
+      return;
+    }
+    if (identityFile.includes('\0')) {
+      toast.error('Identity file path is invalid');
+      return;
+    }
+
+    const profileId =
+      editingProfileId ?? `vps-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    const nextProfile: VpsProfile = {
+      id: profileId,
+      name,
+      host,
+      port: parsedPort,
+      username,
+      identityFile: identityFile || undefined,
+      hostKeyPolicy: profileDraft.hostKeyPolicy,
+    };
+
+    const nextProfiles = editingProfileId
+      ? vpsProfiles.map((profile) => (profile.id === editingProfileId ? nextProfile : profile))
+      : [...vpsProfiles, nextProfile];
+
+    updateGlobalSettings.mutate(
+      { vpsProfiles: nextProfiles },
+      {
+        onSuccess: () => {
+          toast.success(isEditingProfile ? 'VPS profile updated' : 'VPS profile saved');
+          resetProfileEditor();
+        },
+      }
+    );
+  };
+
+  const deleteVpsProfile = (profileId: string) => {
+    const nextProfiles = vpsProfiles.filter((profile) => profile.id !== profileId);
+    updateGlobalSettings.mutate(
+      { vpsProfiles: nextProfiles },
+      {
+        onSuccess: () => {
+          if (editingProfileId === profileId) {
+            resetProfileEditor();
+          }
+          toast.success('VPS profile deleted');
+        },
+      }
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -179,6 +315,184 @@ export function TerminalSection() {
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* VPS Profiles */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-foreground font-medium">VPS Profiles</Label>
+                <p className="text-xs text-muted-foreground">
+                  Save SSH hosts for quickly opening one or multiple remote terminals.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1"
+                onClick={resetProfileEditor}
+              >
+                <SquarePlus className="w-3.5 h-3.5" />
+                New
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {vpsProfiles.length === 0 ? (
+                <div className="rounded-lg border border-border/50 bg-accent/20 p-3 text-xs text-muted-foreground">
+                  No VPS profiles configured yet.
+                </div>
+              ) : (
+                vpsProfiles.map((profile) => (
+                  <div
+                    key={profile.id}
+                    className="rounded-lg border border-border/50 bg-accent/20 p-3 flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Server className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-sm font-medium truncate">{profile.name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                        {profile.username}@{profile.host}:{profile.port ?? DEFAULT_SSH_PORT}
+                      </p>
+                      {profile.identityFile && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                          Key: {profile.identityFile}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => startEditingProfile(profile)}
+                        title="Edit profile"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => deleteVpsProfile(profile.id)}
+                        title="Delete profile"
+                        disabled={updateGlobalSettings.isPending}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="rounded-xl border border-border/60 bg-accent/20 p-4 space-y-3">
+              <Label className="text-foreground font-medium">
+                {isEditingProfile ? 'Edit VPS Profile' : 'Add VPS Profile'}
+              </Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Name</Label>
+                  <Input
+                    value={profileDraft.name}
+                    onChange={(e) =>
+                      setProfileDraft((current) => ({ ...current, name: e.target.value }))
+                    }
+                    placeholder="Production VPS"
+                    className="bg-background border-border/60"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Host</Label>
+                  <Input
+                    value={profileDraft.host}
+                    onChange={(e) =>
+                      setProfileDraft((current) => ({ ...current, host: e.target.value }))
+                    }
+                    placeholder="vps.example.com"
+                    className="bg-background border-border/60"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Username</Label>
+                  <Input
+                    value={profileDraft.username}
+                    onChange={(e) =>
+                      setProfileDraft((current) => ({ ...current, username: e.target.value }))
+                    }
+                    placeholder="ubuntu"
+                    className="bg-background border-border/60"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Port</Label>
+                  <Input
+                    value={profileDraft.port}
+                    onChange={(e) =>
+                      setProfileDraft((current) => ({ ...current, port: e.target.value }))
+                    }
+                    inputMode="numeric"
+                    placeholder="22"
+                    className="bg-background border-border/60"
+                  />
+                </div>
+                <div className="space-y-1 md:col-span-2">
+                  <Label className="text-xs text-muted-foreground">Identity File (optional)</Label>
+                  <Input
+                    value={profileDraft.identityFile}
+                    onChange={(e) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        identityFile: e.target.value,
+                      }))
+                    }
+                    placeholder="~/.ssh/id_ed25519"
+                    className="bg-background border-border/60"
+                  />
+                </div>
+                <div className="space-y-1 md:col-span-2">
+                  <Label className="text-xs text-muted-foreground">Host Key Policy</Label>
+                  <Select
+                    value={profileDraft.hostKeyPolicy}
+                    onValueChange={(value: SshHostKeyPolicy) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        hostKeyPolicy: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="w-full bg-background border-border/60">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="accept-new">Accept New (recommended)</SelectItem>
+                      <SelectItem value="yes">Always Trust</SelectItem>
+                      <SelectItem value="no">Strict (manual trust only)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetProfileEditor}
+                  disabled={updateGlobalSettings.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={saveVpsProfile}
+                  disabled={!canSaveProfile || updateGlobalSettings.isPending}
+                >
+                  {isEditingProfile ? 'Save Changes' : 'Add Profile'}
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Font Family */}

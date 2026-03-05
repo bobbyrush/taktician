@@ -37,7 +37,7 @@ export const WINDOW_BOUNDS_FILENAME = 'window-bounds.json';
 // ============================================
 // Window bounds interface
 // ============================================
-// Matches @automaker/types WindowBounds
+// Matches @taktician/types WindowBounds
 export interface WindowBounds {
   x: number;
   y: number;

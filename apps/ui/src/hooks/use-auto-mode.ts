@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { createLogger } from '@automaker/utils/logger';
-import { DEFAULT_MAX_CONCURRENCY } from '@automaker/types';
+import { createLogger } from '@taktician/utils/logger';
+import { DEFAULT_MAX_CONCURRENCY } from '@taktician/types';
 import { useAppStore } from '@/store/app-store';
 import { getElectronAPI } from '@/lib/electron';
 import type { AutoModeEvent } from '@/types/electron';
@@ -10,7 +10,7 @@ import { getGlobalEventsRecent } from '@/hooks/use-event-recency';
 
 const logger = createLogger('AutoMode');
 
-const AUTO_MODE_SESSION_KEY = 'automaker:autoModeRunningByWorktreeKey';
+const AUTO_MODE_SESSION_KEY = 'taktician:autoModeRunningByWorktreeKey';
 
 function arraysEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;

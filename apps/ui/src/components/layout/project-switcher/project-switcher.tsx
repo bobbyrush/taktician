@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, startTransition } from 'react';
-import { Plus, Bug, FolderOpen, BookOpen } from 'lucide-react';
+import { useState, useCallback, useEffect, useMemo, startTransition } from 'react';
+import { Plus, Bug, BookOpen } from 'lucide-react';
 import { useNavigate, useLocation } from '@tanstack/react-router';
 import { cn, isMac } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
@@ -8,19 +8,17 @@ import { ProjectSwitcherItem } from './components/project-switcher-item';
 import { ProjectContextMenu } from './components/project-context-menu';
 import { EditProjectDialog } from './components/edit-project-dialog';
 import { NotificationBell } from './components/notification-bell';
-import { NewProjectModal } from '@/components/dialogs/new-project-modal';
-import { OnboardingDialog } from '@/components/layout/sidebar/dialogs';
-import { useProjectCreation } from '@/components/layout/sidebar/hooks';
+import { AddVpsWorkspaceDialog } from './components/add-vps-workspace-dialog';
 import {
   MACOS_ELECTRON_TOP_PADDING_CLASS,
   SIDEBAR_FEATURE_FLAGS,
 } from '@/components/layout/sidebar/constants';
 import type { Project } from '@/lib/electron';
 import { getElectronAPI, isElectron } from '@/lib/electron';
-import { initializeProject, hasAppSpec, hasAutomakerDir } from '@/lib/project-init';
+import { getHttpApiClient } from '@/lib/http-api-client';
 import { toast } from 'sonner';
-import { CreateSpecDialog } from '@/components/views/spec-view/dialogs';
-import type { FeatureCount } from '@/components/views/spec-view/types';
+
+const SSH_ONLY_MIGRATION_KEY = 'taktician:ssh-only-local-projects-purged-v1';
 
 function getOSAbbreviation(os: string): string {
   switch (os) {
@@ -35,54 +33,34 @@ function getOSAbbreviation(os: string): string {
   }
 }
 
+function isVpsWorkspaceProject(project: Project): boolean {
+  return project.workspaceType === 'vps';
+}
+
 export function ProjectSwitcher() {
   const navigate = useNavigate();
   const location = useLocation();
   const { hideWiki } = SIDEBAR_FEATURE_FLAGS;
   const isWikiActive = location.pathname === '/wiki';
+
   const projects = useAppStore((s) => s.projects);
   const currentProject = useAppStore((s) => s.currentProject);
   const setCurrentProject = useAppStore((s) => s.setCurrentProject);
-  const upsertAndSetCurrentProject = useAppStore((s) => s.upsertAndSetCurrentProject);
-  const specCreatingForProject = useAppStore((s) => s.specCreatingForProject);
-  const setSpecCreatingForProject = useAppStore((s) => s.setSpecCreatingForProject);
+  const setProjects = useAppStore((s) => s.setProjects);
+
   const [contextMenuProject, setContextMenuProject] = useState<Project | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(
     null
   );
   const [editDialogProject, setEditDialogProject] = useState<Project | null>(null);
+  const [showAddVpsWorkspaceDialog, setShowAddVpsWorkspaceDialog] = useState(false);
 
-  // Setup dialog state for opening existing projects
-  const [showSetupDialog, setShowSetupDialog] = useState(false);
-  const [setupProjectPath, setSetupProjectPath] = useState<string | null>(null);
-  const [projectOverview, setProjectOverview] = useState('');
-  const [generateFeatures, setGenerateFeatures] = useState(true);
-  const [analyzeProject, setAnalyzeProject] = useState(true);
-  const [featureCount, setFeatureCount] = useState<FeatureCount>(50);
-
-  // Derive isCreatingSpec from store state
-  const isCreatingSpec = specCreatingForProject !== null;
-
-  // Version info
   const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
   const { os } = useOSDetection();
   const appMode = import.meta.env.VITE_APP_MODE || '?';
   const versionSuffix = `${getOSAbbreviation(os)}${appMode}`;
 
-  // Project creation state and handlers
-  const {
-    showNewProjectModal,
-    setShowNewProjectModal,
-    isCreatingProject,
-    showOnboardingDialog,
-    setShowOnboardingDialog,
-    newProjectName,
-    handleCreateBlankProject,
-    handleCreateFromTemplate,
-    handleCreateFromCustomUrl,
-  } = useProjectCreation({
-    upsertAndSetCurrentProject,
-  });
+  const vpsProjects = useMemo(() => projects.filter(isVpsWorkspaceProject), [projects]);
 
   const handleContextMenu = (project: Project, event: React.MouseEvent) => {
     event.preventDefault();
@@ -106,200 +84,142 @@ export function ProjectSwitcher() {
         navigate({ to: '/board' });
         return;
       }
-      try {
-        // Ensure .automaker directory structure exists before switching
-        await initializeProject(project.path);
-      } catch (error) {
-        console.error('Failed to initialize project during switch:', error);
-        // Continue with switch even if initialization fails -
-        // the project may already be initialized
-      }
-      // Wrap in startTransition to let React batch the project switch and
-      // navigation into a single low-priority update. Without this, the two
-      // synchronous calls fire separate renders where currentProject points
-      // to the new project but per-project state (worktrees, features) is
-      // still stale, causing a cascade of effects and store mutations that
-      // can trigger React error #185 (maximum update depth exceeded).
+
       startTransition(() => {
         setCurrentProject(project);
-        // Navigate to board view when switching projects
         navigate({ to: '/board' });
       });
     },
-    [currentProject?.id, setCurrentProject, navigate]
+    [currentProject?.id, navigate, setCurrentProject]
   );
-
-  const handleNewProject = () => {
-    // Open the new project modal
-    setShowNewProjectModal(true);
-  };
-
-  const handleOnboardingSkip = () => {
-    setShowOnboardingDialog(false);
-    navigate({ to: '/board' });
-  };
 
   const handleBugReportClick = useCallback(() => {
     const api = getElectronAPI();
-    api.openExternalLink('https://github.com/AutoMaker-Org/automaker/issues');
+    api.openExternalLink('https://github.com/bobbyrush/taktician/issues');
   }, []);
 
   const handleWikiClick = useCallback(() => {
     navigate({ to: '/wiki' });
   }, [navigate]);
 
-  /**
-   * Opens the system folder selection dialog and initializes the selected project.
-   */
-  const handleOpenFolder = useCallback(async () => {
-    const api = getElectronAPI();
-    const result = await api.openDirectory();
+  const handleVpsWorkspaceCreated = useCallback(
+    (project: Project) => {
+      const existing = useAppStore.getState().projects;
+      const alreadyExists = existing.some((entry) => entry.id === project.id);
+      const nextProjects = alreadyExists
+        ? existing.map((entry) => (entry.id === project.id ? project : entry))
+        : [...existing, project];
 
-    if (!result.canceled && result.filePaths[0]) {
-      const path = result.filePaths[0];
-      // Extract folder name from path (works on both Windows and Mac/Linux)
-      const name = path.split(/[/\\]/).filter(Boolean).pop() || 'Untitled Project';
+      setProjects(nextProjects);
+      setCurrentProject(project);
+      navigate({ to: '/board' });
+    },
+    [navigate, setCurrentProject, setProjects]
+  );
 
+  useEffect(() => {
+    // One-time migration for this SSH-only fork: remove legacy local projects.
+    if (localStorage.getItem(SSH_ONLY_MIGRATION_KEY) === '1') {
+      return;
+    }
+
+    let cancelled = false;
+
+    const purgeLegacyLocalProjects = async () => {
       try {
-        // Check if this is a brand new project (no .automaker directory)
-        const hadAutomakerDir = await hasAutomakerDir(path);
-
-        // Initialize the .automaker directory structure
-        const initResult = await initializeProject(path);
-
-        if (!initResult.success) {
-          toast.error('Failed to initialize project', {
-            description: initResult.error || 'Unknown error occurred',
-          });
+        const result = await getHttpApiClient().workspace.purgeLocalProjects();
+        if (!result.success || cancelled) {
           return;
         }
 
-        // Upsert project and set as current (handles both create and update cases)
-        // Theme handling (trashed project recovery or undefined for global) is done by the store
-        upsertAndSetCurrentProject(path, name);
+        const nextProjects = (result.projects ?? []) as Project[];
+        setProjects(nextProjects);
 
-        // Check if app_spec.txt exists
-        const specExists = await hasAppSpec(path);
+        const currentId = result.currentProjectId;
+        const nextCurrent = currentId
+          ? (nextProjects.find((project) => project.id === currentId) ?? null)
+          : null;
+        setCurrentProject(nextCurrent);
 
-        if (!hadAutomakerDir && !specExists) {
-          // This is a brand new project - show setup dialog
-          setSetupProjectPath(path);
-          setShowSetupDialog(true);
-          toast.success('Project opened', {
-            description: `Opened ${name}. Let's set up your app specification!`,
-          });
-        } else if (initResult.createdFiles && initResult.createdFiles.length > 0) {
-          toast.success(initResult.isNewProject ? 'Project initialized' : 'Project updated', {
-            description: `Set up ${initResult.createdFiles.length} file(s) in .automaker`,
-          });
-        } else {
-          toast.success('Project opened', {
-            description: `Opened ${name}`,
+        localStorage.setItem(SSH_ONLY_MIGRATION_KEY, '1');
+
+        if ((result.removedCount ?? 0) > 0) {
+          toast.success('Migrated to SSH-only workspaces', {
+            description: `Removed ${result.removedCount} local project entries.`,
           });
         }
-
-        // Navigate to board view
-        navigate({ to: '/board' });
       } catch (error) {
-        console.error('Failed to open project:', error);
-        toast.error('Failed to open project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
-        });
+        if (!cancelled) {
+          toast.error('Failed to migrate local projects', {
+            description: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
       }
+    };
+
+    void purgeLegacyLocalProjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setCurrentProject, setProjects]);
+
+  useEffect(() => {
+    // Ensure selected project is always a VPS workspace in SSH-only mode.
+    if (currentProject && isVpsWorkspaceProject(currentProject)) {
+      return;
     }
-  }, [upsertAndSetCurrentProject, navigate]);
 
-  // Handler for creating initial spec from the setup dialog
-  const handleCreateInitialSpec = useCallback(async () => {
-    if (!setupProjectPath) return;
-
-    setSpecCreatingForProject(setupProjectPath);
-    setShowSetupDialog(false);
-
-    try {
-      const api = getElectronAPI();
-      if (!api.specRegeneration) {
-        toast.error('Spec regeneration not available');
-        setSpecCreatingForProject(null);
-        return;
-      }
-      await api.specRegeneration.create(
-        setupProjectPath,
-        projectOverview,
-        generateFeatures,
-        analyzeProject,
-        featureCount
-      );
-    } catch (error) {
-      console.error('Failed to generate spec:', error);
-      toast.error('Failed to generate spec', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-      setSpecCreatingForProject(null);
+    const firstVpsProject = vpsProjects[0] ?? null;
+    if (firstVpsProject) {
+      setCurrentProject(firstVpsProject);
+    } else if (currentProject) {
+      setCurrentProject(null);
     }
-  }, [
-    setupProjectPath,
-    projectOverview,
-    generateFeatures,
-    analyzeProject,
-    featureCount,
-    setSpecCreatingForProject,
-  ]);
+  }, [currentProject, setCurrentProject, vpsProjects]);
 
-  const handleSkipSetup = useCallback(() => {
-    setShowSetupDialog(false);
-    setSetupProjectPath(null);
-  }, []);
-
-  // Keyboard shortcuts for project switching (1-9, 0)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignore if user is typing in an input, textarea, or contenteditable
       const target = event.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
         return;
       }
 
-      // Ignore if modifier keys are pressed (except for standalone number keys)
       if (event.ctrlKey || event.metaKey || event.altKey) {
         return;
       }
 
-      // Map key to project index: "1" -> 0, "2" -> 1, ..., "9" -> 8, "0" -> 9
       const key = event.key;
       let projectIndex: number | null = null;
 
       if (key >= '1' && key <= '9') {
-        projectIndex = parseInt(key, 10) - 1; // "1" -> 0, "9" -> 8
+        projectIndex = Number.parseInt(key, 10) - 1;
       } else if (key === '0') {
-        projectIndex = 9; // "0" -> 9
+        projectIndex = 9;
       }
 
-      if (projectIndex !== null && projectIndex < projects.length) {
-        const targetProject = projects[projectIndex];
+      if (projectIndex !== null && projectIndex < vpsProjects.length) {
+        const targetProject = vpsProjects[projectIndex];
         if (targetProject && targetProject.id !== currentProject?.id) {
-          handleProjectClick(targetProject);
+          void handleProjectClick(targetProject);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [projects, currentProject, handleProjectClick]);
+  }, [vpsProjects, currentProject?.id, handleProjectClick]);
 
   return (
     <>
       <aside
         className={cn(
           'flex-shrink-0 flex flex-col w-16 z-50 relative',
-          // Glass morphism background with gradient
           'bg-gradient-to-b from-sidebar/95 via-sidebar/85 to-sidebar/90 backdrop-blur-2xl',
-          // Premium border with subtle glow
           'border-r border-border/60 shadow-[1px_0_20px_-5px_rgba(0,0,0,0.1)]'
         )}
         data-testid="project-switcher"
       >
-        {/* Automaker Logo and Version */}
         <div
           className={cn(
             'flex flex-col items-center pb-2 px-2',
@@ -315,7 +235,7 @@ export function ProjectSwitcher() {
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 256 256"
               role="img"
-              aria-label="Automaker Logo"
+              aria-label="Taktician Logo"
               className="size-10 group-hover:rotate-12 transition-transform duration-300 ease-out"
             >
               <defs>
@@ -349,99 +269,43 @@ export function ProjectSwitcher() {
             </span>
           </button>
 
-          {/* Notification Bell */}
           <div className="flex justify-center mt-2">
             <NotificationBell projectPath={currentProject?.path ?? null} />
           </div>
           <div className="w-full h-px bg-border mt-3" />
         </div>
 
-        {/* Projects List */}
         <div className="flex-1 overflow-y-auto pt-1 pb-3 px-2 space-y-2">
-          {projects.map((project, index) => (
+          {vpsProjects.map((project, index) => (
             <ProjectSwitcherItem
               key={project.id}
               project={project}
               isActive={currentProject?.id === project.id}
               hotkeyIndex={index < 10 ? index : undefined}
-              onClick={() => handleProjectClick(project)}
+              onClick={() => void handleProjectClick(project)}
               onContextMenu={(e) => handleContextMenu(project, e)}
             />
           ))}
 
-          {/* Horizontal rule and Add Project Button - only show if there are projects */}
-          {projects.length > 0 && (
-            <>
-              <div className="w-full h-px bg-border my-2" />
-              <button
-                onClick={handleNewProject}
-                className={cn(
-                  'w-full aspect-square rounded-xl flex items-center justify-center',
-                  'transition-all duration-200 ease-out',
-                  'text-muted-foreground hover:text-foreground',
-                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                  'hover:shadow-sm hover:scale-105 active:scale-95'
-                )}
-                title="New Project"
-                data-testid="new-project-button"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleOpenFolder}
-                className={cn(
-                  'w-full aspect-square rounded-xl flex items-center justify-center',
-                  'transition-all duration-200 ease-out',
-                  'text-muted-foreground hover:text-foreground',
-                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                  'hover:shadow-sm hover:scale-105 active:scale-95'
-                )}
-                title="Open Project"
-                data-testid="open-project-button"
-              >
-                <FolderOpen className="w-5 h-5" />
-              </button>
-            </>
-          )}
+          {vpsProjects.length > 0 && <div className="w-full h-px bg-border my-2" />}
 
-          {/* Add Project Button - when no projects, show without rule */}
-          {projects.length === 0 && (
-            <>
-              <button
-                onClick={handleNewProject}
-                className={cn(
-                  'w-full aspect-square rounded-xl flex items-center justify-center',
-                  'transition-all duration-200 ease-out',
-                  'text-muted-foreground hover:text-foreground',
-                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                  'hover:shadow-sm hover:scale-105 active:scale-95'
-                )}
-                title="New Project"
-                data-testid="new-project-button"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleOpenFolder}
-                className={cn(
-                  'w-full aspect-square rounded-xl flex items-center justify-center',
-                  'transition-all duration-200 ease-out',
-                  'text-muted-foreground hover:text-foreground',
-                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                  'hover:shadow-sm hover:scale-105 active:scale-95'
-                )}
-                title="Open Project"
-                data-testid="open-project-button"
-              >
-                <FolderOpen className="w-5 h-5" />
-              </button>
-            </>
-          )}
+          <button
+            onClick={() => setShowAddVpsWorkspaceDialog(true)}
+            className={cn(
+              'w-full aspect-square rounded-xl flex items-center justify-center',
+              'transition-all duration-200 ease-out',
+              'text-muted-foreground hover:text-foreground',
+              'hover:bg-accent/50 border border-transparent hover:border-border/40',
+              'hover:shadow-sm hover:scale-105 active:scale-95'
+            )}
+            title="Add VPS Workspace"
+            data-testid="new-project-button"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Wiki and Bug Report Buttons at the very bottom */}
         <div className="p-2 border-t border-border/40 space-y-2">
-          {/* Wiki Button */}
           {!hideWiki && (
             <button
               onClick={handleWikiClick}
@@ -469,7 +333,7 @@ export function ProjectSwitcher() {
               />
             </button>
           )}
-          {/* Bug Report Button */}
+
           <button
             onClick={handleBugReportClick}
             className={cn(
@@ -487,7 +351,6 @@ export function ProjectSwitcher() {
         </div>
       </aside>
 
-      {/* Context Menu */}
       {contextMenuProject && contextMenuPosition && (
         <ProjectContextMenu
           project={contextMenuProject}
@@ -497,7 +360,6 @@ export function ProjectSwitcher() {
         />
       )}
 
-      {/* Edit Project Dialog */}
       {editDialogProject && (
         <EditProjectDialog
           project={editDialogProject}
@@ -506,43 +368,10 @@ export function ProjectSwitcher() {
         />
       )}
 
-      {/* New Project Modal */}
-      <NewProjectModal
-        open={showNewProjectModal}
-        onOpenChange={setShowNewProjectModal}
-        onCreateBlankProject={handleCreateBlankProject}
-        onCreateFromTemplate={handleCreateFromTemplate}
-        onCreateFromCustomUrl={handleCreateFromCustomUrl}
-        isCreating={isCreatingProject}
-      />
-
-      {/* Onboarding Dialog */}
-      <OnboardingDialog
-        open={showOnboardingDialog}
-        onOpenChange={setShowOnboardingDialog}
-        newProjectName={newProjectName}
-        onSkip={handleOnboardingSkip}
-        onGenerateSpec={handleOnboardingSkip}
-      />
-
-      {/* Setup Dialog for Open Project */}
-      <CreateSpecDialog
-        open={showSetupDialog}
-        onOpenChange={setShowSetupDialog}
-        projectOverview={projectOverview}
-        onProjectOverviewChange={setProjectOverview}
-        generateFeatures={generateFeatures}
-        onGenerateFeaturesChange={setGenerateFeatures}
-        analyzeProject={analyzeProject}
-        onAnalyzeProjectChange={setAnalyzeProject}
-        featureCount={featureCount}
-        onFeatureCountChange={setFeatureCount}
-        onCreateSpec={handleCreateInitialSpec}
-        onSkip={handleSkipSetup}
-        isCreatingSpec={isCreatingSpec}
-        showSkipButton={true}
-        title="Set Up Your Project"
-        description="We didn't find an app_spec.txt file. Let us help you generate your app_spec.txt to help describe your project for our system. We'll analyze your project's tech stack and create a comprehensive specification."
+      <AddVpsWorkspaceDialog
+        open={showAddVpsWorkspaceDialog}
+        onOpenChange={setShowAddVpsWorkspaceDialog}
+        onCreated={handleVpsWorkspaceCreated}
       />
     </>
   );

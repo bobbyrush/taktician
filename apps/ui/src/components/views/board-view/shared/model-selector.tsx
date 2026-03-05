@@ -5,8 +5,8 @@ import { AnthropicIcon, CursorIcon, OpenAIIcon } from '@/components/ui/provider-
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import { useSetupStore } from '@/store/setup-store';
-import { getModelProvider } from '@automaker/types';
-import type { ModelProvider, CursorModelId } from '@automaker/types';
+import { getModelProvider } from '@taktician/types';
+import type { ModelProvider, CursorModelId } from '@taktician/types';
 import { CLAUDE_MODELS, CURSOR_MODELS, ModelOption } from './model-constants';
 import { useEffect } from 'react';
 import { Spinner } from '@/components/ui/spinner';

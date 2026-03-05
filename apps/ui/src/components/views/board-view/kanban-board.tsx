@@ -25,7 +25,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useResponsiveKanban } from '@/hooks/use-responsive-kanban';
 import { getColumnsWithPipeline, type ColumnId } from './constants';
-import type { PipelineConfig, FeatureTemplate } from '@automaker/types';
+import type { PipelineConfig, FeatureTemplate } from '@taktician/types';
 import { AddFeatureButton } from './components/add-feature-button';
 import { cn } from '@/lib/utils';
 interface KanbanBoardProps {

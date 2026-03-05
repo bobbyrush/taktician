@@ -28,12 +28,12 @@ import { cn } from '@/lib/utils';
 import { modelSupportsThinking } from '@/lib/utils';
 import { useAppStore } from '@/store/app-store';
 import type { ThinkingLevel, PlanningMode, Feature, FeatureImage } from '@/store/types';
-import type { ReasoningEffort, PhaseModelEntry, AgentModel } from '@automaker/types';
+import type { ReasoningEffort, PhaseModelEntry, AgentModel } from '@taktician/types';
 import {
   supportsReasoningEffort,
   normalizeThinkingLevelForModel,
   getThinkingLevelsForModel,
-} from '@automaker/types';
+} from '@taktician/types';
 import {
   PrioritySelector,
   WorkModeSelector,
@@ -51,7 +51,7 @@ import {
   getAncestors,
   formatAncestorContextForPrompt,
   type AncestorContext,
-} from '@automaker/dependency-resolver';
+} from '@taktician/dependency-resolver';
 
 /**
  * Determines the default work mode based on global settings and current worktree selection.

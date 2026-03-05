@@ -2,19 +2,19 @@ import { Folder, LogOut } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { Project } from '@/lib/electron';
 
-interface RemoveFromAutomakerDialogProps {
+interface RemoveFromTakticianDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project: Project | null;
   onConfirm: (projectId: string) => void;
 }
 
-export function RemoveFromAutomakerDialog({
+export function RemoveFromTakticianDialog({
   open,
   onOpenChange,
   project,
   onConfirm,
-}: RemoveFromAutomakerDialogProps) {
+}: RemoveFromTakticianDialogProps) {
   const handleConfirm = () => {
     if (project) {
       onConfirm(project.id);
@@ -26,11 +26,11 @@ export function RemoveFromAutomakerDialog({
       open={open}
       onOpenChange={onOpenChange}
       onConfirm={handleConfirm}
-      title="Remove from Automaker"
-      description="Remove this project from Automaker? The folder will remain on disk and can be re-added later."
+      title="Remove from Taktician"
+      description="Remove this project from Taktician? The folder will remain on disk and can be re-added later."
       icon={LogOut}
       iconClassName="text-muted-foreground"
-      confirmText="Remove from Automaker"
+      confirmText="Remove from Taktician"
       confirmVariant="secondary"
     >
       {project && (

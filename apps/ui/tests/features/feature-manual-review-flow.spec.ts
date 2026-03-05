@@ -48,23 +48,23 @@ test.describe('Feature Manual Review Flow', () => {
       JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
     );
 
-    const automakerDir = path.join(projectPath, '.automaker');
-    fs.mkdirSync(automakerDir, { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(automakerDir, 'context'), { recursive: true });
+    const takticianDir = path.join(projectPath, '.taktician');
+    fs.mkdirSync(takticianDir, { recursive: true });
+    fs.mkdirSync(path.join(takticianDir, 'features'), { recursive: true });
+    fs.mkdirSync(path.join(takticianDir, 'context'), { recursive: true });
 
     fs.writeFileSync(
-      path.join(automakerDir, 'categories.json'),
+      path.join(takticianDir, 'categories.json'),
       JSON.stringify({ categories: [] }, null, 2)
     );
 
     fs.writeFileSync(
-      path.join(automakerDir, 'app_spec.txt'),
+      path.join(takticianDir, 'app_spec.txt'),
       `# ${projectName}\n\nA test project for e2e testing.`
     );
 
     // Create a feature file that is in waiting_approval status
-    const featureDir = path.join(automakerDir, 'features', featureId);
+    const featureDir = path.join(takticianDir, 'features', featureId);
     fs.mkdirSync(featureDir, { recursive: true });
 
     // Note: Feature is created via HTTP API in the test itself, not in beforeAll
@@ -100,7 +100,7 @@ test.describe('Feature Manual Review Flow', () => {
 
         if (!testProject) {
           // Project not in server response yet — use the same deterministic TEST_PROJECT_ID
-          // that was seeded in automaker-settings-cache.currentProjectId via setupRealProject.
+          // that was seeded in taktician-settings-cache.currentProjectId via setupRealProject.
           testProject = {
             id: TEST_PROJECT_ID,
             name: projectName,

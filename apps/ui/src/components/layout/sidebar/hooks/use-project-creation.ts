@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 import { getElectronAPI } from '@/lib/electron';
 
 const logger = createLogger('ProjectCreation');
@@ -11,6 +11,8 @@ import type { Project } from '@/lib/electron';
 interface UseProjectCreationProps {
   upsertAndSetCurrentProject: (path: string, name: string) => Project;
 }
+
+const SSH_ONLY_MODE = true;
 
 export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCreationProps) {
   // Modal state
@@ -28,14 +30,14 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
   const finalizeProjectCreation = useCallback(
     async (projectPath: string, projectName: string) => {
       try {
-        // Initialize .automaker directory structure
+        // Initialize .taktician directory structure
         await initializeProject(projectPath);
 
         // Write initial app_spec.txt with proper XML structure
         // Note: Must follow XML format as defined in apps/server/src/lib/app-spec-format.ts
         const api = getElectronAPI();
         await api.writeFile(
-          `${projectPath}/.automaker/app_spec.txt`,
+          `${projectPath}/.taktician/app_spec.txt`,
           `<project_specification>
   <project_name>${projectName}</project_name>
 
@@ -81,10 +83,17 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
   );
 
   /**
-   * Create a blank project with .automaker structure
+   * Create a blank project with .taktician structure
    */
   const handleCreateBlankProject = useCallback(
     async (projectName: string, parentDir: string) => {
+      if (SSH_ONLY_MODE) {
+        toast.error('Local project creation is disabled in SSH-only mode', {
+          description: 'Use \"Add VPS Workspace\" from the left sidebar.',
+        });
+        return;
+      }
+
       setIsCreatingProject(true);
       try {
         const api = getElectronAPI();
@@ -112,6 +121,13 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
    */
   const handleCreateFromTemplate = useCallback(
     async (template: StarterTemplate, projectName: string, parentDir: string) => {
+      if (SSH_ONLY_MODE) {
+        toast.error('Template-based local projects are disabled in SSH-only mode', {
+          description: 'Use \"Add VPS Workspace\" from the left sidebar.',
+        });
+        return;
+      }
+
       setIsCreatingProject(true);
       try {
         const api = getElectronAPI();
@@ -126,12 +142,12 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         }
         const projectPath = cloneResult.projectPath!;
 
-        // Initialize .automaker directory structure
+        // Initialize .taktician directory structure
         await initializeProject(projectPath);
 
         // Write app_spec.txt with template-specific info
         await api.writeFile(
-          `${projectPath}/.automaker/app_spec.txt`,
+          `${projectPath}/.taktician/app_spec.txt`,
           `<project_specification>
   <project_name>${projectName}</project_name>
 
@@ -181,6 +197,13 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
    */
   const handleCreateFromCustomUrl = useCallback(
     async (repoUrl: string, projectName: string, parentDir: string) => {
+      if (SSH_ONLY_MODE) {
+        toast.error('Local clone flow is disabled in SSH-only mode', {
+          description: 'Use \"Add VPS Workspace\" from the left sidebar.',
+        });
+        return;
+      }
+
       setIsCreatingProject(true);
       try {
         const api = getElectronAPI();
@@ -195,12 +218,12 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         }
         const projectPath = cloneResult.projectPath!;
 
-        // Initialize .automaker directory structure
+        // Initialize .taktician directory structure
         await initializeProject(projectPath);
 
         // Write app_spec.txt with custom URL info
         await api.writeFile(
-          `${projectPath}/.automaker/app_spec.txt`,
+          `${projectPath}/.taktician/app_spec.txt`,
           `<project_specification>
   <project_name>${projectName}</project_name>
 

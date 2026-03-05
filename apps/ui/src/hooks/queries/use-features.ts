@@ -19,7 +19,7 @@ const FEATURES_REFETCH_ON_RECONNECT = false;
 const FEATURES_POLLING_INTERVAL = 30000;
 /** Default polling interval for agent output when WebSocket is inactive */
 const AGENT_OUTPUT_POLLING_INTERVAL = 5000;
-const FEATURES_CACHE_PREFIX = 'automaker:features-cache:';
+const FEATURES_CACHE_PREFIX = 'taktician:features-cache:';
 
 /**
  * Bump this version whenever the Feature shape changes so stale localStorage

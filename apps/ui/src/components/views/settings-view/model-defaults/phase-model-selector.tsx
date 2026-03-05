@@ -15,7 +15,7 @@ import type {
   ClaudeCompatibleProvider,
   ProviderModel,
   ClaudeModelAlias,
-} from '@automaker/types';
+} from '@taktician/types';
 import {
   STANDALONE_CURSOR_MODELS,
   getModelGroup,
@@ -23,7 +23,7 @@ import {
   getSelectedVariant,
   codexModelHasThinking,
   getThinkingLevelsForModel,
-} from '@automaker/types';
+} from '@taktician/types';
 import {
   CLAUDE_MODELS,
   CURSOR_MODELS,

@@ -9,7 +9,7 @@ import {
   PlanningMode,
   useAppStore,
 } from '@/store/app-store';
-import type { ReasoningEffort } from '@automaker/types';
+import type { ReasoningEffort } from '@taktician/types';
 import { FeatureImagePath as DescriptionImagePath } from '@/components/ui/description-image-dropzone';
 import { getElectronAPI } from '@/lib/electron';
 import { isConnectionError, handleServerOffline, getHttpApiClient } from '@/lib/http-api-client';
@@ -17,8 +17,8 @@ import { toast } from 'sonner';
 import { useAutoMode } from '@/hooks/use-auto-mode';
 import { useVerifyFeature, useResumeFeature } from '@/hooks/mutations';
 import { truncateDescription } from '@/lib/utils';
-import { getBlockingDependencies } from '@automaker/dependency-resolver';
-import { createLogger } from '@automaker/utils/logger';
+import { getBlockingDependencies } from '@taktician/dependency-resolver';
+import { createLogger } from '@taktician/utils/logger';
 import { queryKeys } from '@/lib/query-keys';
 
 const logger = createLogger('BoardActions');

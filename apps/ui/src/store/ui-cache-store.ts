@@ -44,7 +44,7 @@ interface UICacheActions {
   updateFromAppStore: (state: Partial<UICacheState>) => void;
 }
 
-const STORE_NAME = 'automaker-ui-cache';
+const STORE_NAME = 'taktician-ui-cache';
 
 export const useUICacheStore = create<UICacheState & UICacheActions>()(
   persist(

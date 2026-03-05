@@ -5,7 +5,7 @@ import {
   createFeatureMap,
   getBlockingDependenciesFromMap,
   resolveDependencies,
-} from '@automaker/dependency-resolver';
+} from '@taktician/dependency-resolver';
 
 type ColumnId = Feature['status'];
 

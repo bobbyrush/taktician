@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { SpecOutput } from '@automaker/spec-parser';
-import { specToXml } from '@automaker/spec-parser';
+import type { SpecOutput } from '@taktician/spec-parser';
+import { specToXml } from '@taktician/spec-parser';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ProjectInfoSection,

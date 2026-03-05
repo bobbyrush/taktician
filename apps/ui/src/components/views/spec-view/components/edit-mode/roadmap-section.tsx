@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { SpecOutput } from '@automaker/spec-parser';
+import type { SpecOutput } from '@taktician/spec-parser';
 import { generateUUID } from '@/lib/utils';
 
 type RoadmapPhase = NonNullable<SpecOutput['implementation_roadmap']>[number];

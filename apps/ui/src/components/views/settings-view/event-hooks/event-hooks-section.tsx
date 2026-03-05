@@ -5,12 +5,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Webhook, Plus, Trash2, Pencil, Terminal, Globe, History } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
-import type { EventHook, EventHookTrigger } from '@automaker/types';
-import { EVENT_HOOK_TRIGGER_LABELS } from '@automaker/types';
+import type { EventHook, EventHookTrigger } from '@taktician/types';
+import { EVENT_HOOK_TRIGGER_LABELS } from '@taktician/types';
 import { EventHookDialog } from './event-hook-dialog';
 import { EventHistoryView } from './event-history-view';
 import { toast } from 'sonner';
-import { createLogger } from '@automaker/utils/logger';
+import { createLogger } from '@taktician/utils/logger';
 
 const logger = createLogger('EventHooks');
 

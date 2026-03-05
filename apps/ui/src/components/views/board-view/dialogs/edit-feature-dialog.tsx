@@ -26,8 +26,8 @@ import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { cn, modelSupportsThinking } from '@/lib/utils';
 import { Feature, ModelAlias, ThinkingLevel, PlanningMode } from '@/store/app-store';
-import type { ReasoningEffort, PhaseModelEntry, DescriptionHistoryEntry } from '@automaker/types';
-import { migrateModelId } from '@automaker/types';
+import type { ReasoningEffort, PhaseModelEntry, DescriptionHistoryEntry } from '@taktician/types';
+import { migrateModelId } from '@taktician/types';
 import {
   PrioritySelector,
   WorkModeSelector,
@@ -41,7 +41,7 @@ import type { WorkMode } from '../shared';
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DependencyTreeDialog } from './dependency-tree-dialog';
-import { supportsReasoningEffort } from '@automaker/types';
+import { supportsReasoningEffort } from '@taktician/types';
 
 interface EditFeatureDialogProps {
   feature: Feature | null;
