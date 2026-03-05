@@ -4,9 +4,9 @@
  * This module re-exports terminal theme data for use in the server.
  */
 
-import { terminalThemeColors, getTerminalThemeColors as getThemeColors } from '@automaker/platform';
-import type { ThemeMode } from '@automaker/types';
-import type { TerminalTheme } from '@automaker/platform';
+import { terminalThemeColors, getTerminalThemeColors as getThemeColors } from '@taktician/platform';
+import type { ThemeMode } from '@taktician/types';
+import type { TerminalTheme } from '@taktician/platform';
 
 /**
  * Get terminal theme colors for a given theme mode

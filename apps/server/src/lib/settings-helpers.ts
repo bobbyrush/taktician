@@ -3,8 +3,8 @@
  */
 
 import type { SettingsService } from '../services/settings-service.js';
-import type { ContextFilesResult, ContextFileInfo } from '@automaker/utils';
-import { createLogger } from '@automaker/utils';
+import type { ContextFilesResult, ContextFileInfo } from '@taktician/utils';
+import { createLogger } from '@taktician/utils';
 import type {
   MCPServerConfig,
   McpServerConfig,
@@ -14,8 +14,8 @@ import type {
   PhaseModelKey,
   PhaseModelEntry,
   Credentials,
-} from '@automaker/types';
-import { DEFAULT_PHASE_MODELS } from '@automaker/types';
+} from '@taktician/types';
+import { DEFAULT_PHASE_MODELS } from '@taktician/types';
 import {
   mergeAutoModePrompts,
   mergeAgentPrompts,
@@ -29,7 +29,7 @@ import {
   mergeContextDescriptionPrompts,
   mergeSuggestionsPrompts,
   mergeTaskExecutionPrompts,
-} from '@automaker/prompts';
+} from '@taktician/prompts';
 
 const logger = createLogger('SettingsHelper');
 
@@ -213,7 +213,7 @@ ${formattedFiles.join('\n\n---\n\n')}
 
 /**
  * Format a single context file entry for the prompt
- * (Matches the format used in @automaker/utils/context-loader.ts)
+ * (Matches the format used in @taktician/utils/context-loader.ts)
  */
 function formatContextFileEntry(file: ContextFileInfo): string {
   const header = `## ${file.name}`;
@@ -418,7 +418,7 @@ export async function getSubagentsConfiguration(settingsService: SettingsService
 export async function getCustomSubagents(
   settingsService: SettingsService,
   projectPath?: string
-): Promise<Record<string, import('@automaker/types').AgentDefinition> | undefined> {
+): Promise<Record<string, import('@taktician/types').AgentDefinition> | undefined> {
   // Get global subagents
   const globalSettings = await settingsService.getGlobalSettings();
   const globalSubagents = globalSettings.customSubagents || {};
@@ -446,7 +446,7 @@ export interface ActiveClaudeApiProfileResult {
   /** The active profile, or undefined if using direct Anthropic API */
   profile: ClaudeApiProfile | undefined;
   /** Credentials for resolving 'credentials' apiKeySource */
-  credentials: import('@automaker/types').Credentials | undefined;
+  credentials: import('@taktician/types').Credentials | undefined;
 }
 
 /**
@@ -682,7 +682,7 @@ export interface ProviderByModelIdResult {
   /** The provider that contains this model, or undefined if not found */
   provider: ClaudeCompatibleProvider | undefined;
   /** The model configuration if found */
-  modelConfig: import('@automaker/types').ProviderModel | undefined;
+  modelConfig: import('@taktician/types').ProviderModel | undefined;
   /** Credentials for API key resolution */
   credentials: Credentials | undefined;
   /** The resolved Claude model ID to use for API calls (from mapsToClaudeModel) */
@@ -731,7 +731,7 @@ export async function getProviderByModelId(
         let resolvedModel: string | undefined;
         if (modelConfig.mapsToClaudeModel) {
           // Import resolveModelString to convert alias to full model ID
-          const { resolveModelString } = await import('@automaker/model-resolver');
+          const { resolveModelString } = await import('@taktician/model-resolver');
           resolvedModel = resolveModelString(modelConfig.mapsToClaudeModel);
           logger.info(
             `${logPrefix} Model "${modelId}" maps to Claude model "${modelConfig.mapsToClaudeModel}" -> "${resolvedModel}"`
@@ -776,7 +776,7 @@ export async function getAllProviderModels(
   Array<{
     providerId: string;
     providerName: string;
-    model: import('@automaker/types').ProviderModel;
+    model: import('@taktician/types').ProviderModel;
   }>
 > {
   try {
@@ -786,7 +786,7 @@ export async function getAllProviderModels(
     const allModels: Array<{
       providerId: string;
       providerName: string;
-      model: import('@automaker/types').ProviderModel;
+      model: import('@taktician/types').ProviderModel;
     }> = [];
 
     for (const provider of providers) {

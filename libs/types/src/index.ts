@@ -1,6 +1,6 @@
 /**
- * @automaker/types
- * Shared type definitions for AutoMaker
+ * @taktician/types
+ * Shared type definitions for Taktician
  */
 
 // Provider types
@@ -158,6 +158,7 @@ export type {
   KeyboardShortcuts,
   MCPToolInfo,
   MCPServerConfig,
+  ProjectWorkspaceType,
   ProjectRef,
   TrashedProjectRef,
   ChatSessionRef,
@@ -182,6 +183,8 @@ export type {
   ProviderModel,
   ClaudeCompatibleProvider,
   ClaudeCompatibleProviderTemplate,
+  VpsProfile,
+  SshHostKeyPolicy,
   // Claude API profile types (deprecated)
   ClaudeApiProfile,
   ClaudeApiProfileTemplate,

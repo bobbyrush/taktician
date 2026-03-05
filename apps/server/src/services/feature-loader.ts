@@ -1,25 +1,25 @@
 /**
  * Feature Loader - Handles loading and managing features from individual feature folders
- * Each feature is stored in .automaker/features/{featureId}/feature.json
+ * Each feature is stored in .taktician/features/{featureId}/feature.json
  */
 
 import path from 'path';
-import type { Feature, DescriptionHistoryEntry } from '@automaker/types';
+import type { Feature, DescriptionHistoryEntry } from '@taktician/types';
 import {
   createLogger,
   atomicWriteJson,
   readJsonWithRecovery,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
-} from '@automaker/utils';
+} from '@taktician/utils';
 import * as secureFs from '../lib/secure-fs.js';
 import {
   getFeaturesDir,
   getFeatureDir,
   getFeatureImagesDir,
   getAppSpecPath,
-  ensureAutomakerDir,
-} from '@automaker/platform';
+  ensureTakticianDir,
+} from '@taktician/platform';
 import { addImplementedFeature, type ImplementedFeature } from '../lib/xml-extractor.js';
 
 const logger = createLogger('FeatureLoader');
@@ -349,8 +349,8 @@ export class FeatureLoader {
     const featureDir = this.getFeatureDir(projectPath, featureId);
     const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
 
-    // Ensure automaker directory exists
-    await ensureAutomakerDir(projectPath);
+    // Ensure taktician directory exists
+    await ensureTakticianDir(projectPath);
 
     // Create feature directory
     await secureFs.mkdir(featureDir, { recursive: true });

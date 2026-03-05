@@ -17,12 +17,12 @@ export function createDeauthGeminiHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       const projectRoot = process.cwd();
-      const automakerDir = path.join(projectRoot, '.automaker');
+      const takticianDir = path.join(projectRoot, '.taktician');
 
-      // Ensure .automaker directory exists
-      await fs.mkdir(automakerDir, { recursive: true });
+      // Ensure .taktician directory exists
+      await fs.mkdir(takticianDir, { recursive: true });
 
-      const markerPath = path.join(automakerDir, DISCONNECTED_MARKER_FILE);
+      const markerPath = path.join(takticianDir, DISCONNECTED_MARKER_FILE);
 
       // Create the disconnection marker
       await fs.writeFile(markerPath, 'Gemini CLI disconnected from app');

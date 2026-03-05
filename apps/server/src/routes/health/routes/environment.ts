@@ -16,7 +16,7 @@ export function createEnvironmentHandler() {
   return (_req: Request, res: Response): void => {
     res.json({
       isContainerized: process.env.IS_CONTAINERIZED === 'true',
-      skipSandboxWarning: process.env.AUTOMAKER_SKIP_SANDBOX_WARNING === 'true',
+      skipSandboxWarning: process.env.TAKTICIAN_SKIP_SANDBOX_WARNING === 'true',
     } satisfies EnvironmentResponse);
   };
 }

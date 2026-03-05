@@ -1,13 +1,13 @@
 /**
  * Validation Storage - CRUD operations for GitHub issue validation results
  *
- * Stores validation results in .automaker/validations/{issueNumber}/validation.json
+ * Stores validation results in .taktician/validations/{issueNumber}/validation.json
  * Results include the validation verdict, metadata, and timestamp for cache invalidation.
  */
 
 import * as secureFs from './secure-fs.js';
-import { getValidationsDir, getValidationDir, getValidationPath } from '@automaker/platform';
-import type { StoredValidation } from '@automaker/types';
+import { getValidationsDir, getValidationDir, getValidationPath } from '@taktician/platform';
+import type { StoredValidation } from '@taktician/types';
 
 // Re-export StoredValidation for convenience
 export type { StoredValidation };

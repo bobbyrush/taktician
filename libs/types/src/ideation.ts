@@ -1,5 +1,5 @@
 /**
- * Ideation types for AutoMaker brainstorming and idea management
+ * Ideation types for Taktician brainstorming and idea management
  */
 
 // ============================================================================
@@ -238,15 +238,15 @@ export interface IdeationAnalysisEvent {
  * All values default to true for backward compatibility.
  */
 export interface IdeationContextSources {
-  /** Include .automaker/context/*.md|.txt files */
+  /** Include .taktician/context/*.md|.txt files */
   useContextFiles: boolean;
-  /** Include .automaker/memory/*.md files */
+  /** Include .taktician/memory/*.md files */
   useMemoryFiles: boolean;
   /** Include existing features from the board */
   useExistingFeatures: boolean;
   /** Include existing ideas from ideation */
   useExistingIdeas: boolean;
-  /** Include app specification (.automaker/app_spec.txt) */
+  /** Include app specification (.taktician/app_spec.txt) */
   useAppSpec: boolean;
 }
 

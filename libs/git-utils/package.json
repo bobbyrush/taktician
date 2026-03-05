@@ -1,8 +1,8 @@
 {
-  "name": "@automaker/git-utils",
+  "name": "@taktician/git-utils",
   "version": "1.0.0",
   "type": "module",
-  "description": "Git operations utilities for AutoMaker",
+  "description": "Git operations utilities for Taktician",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -12,19 +12,19 @@
     "test:watch": "vitest"
   },
   "keywords": [
-    "automaker",
+    "taktician",
     "git",
     "utils"
   ],
-  "author": "AutoMaker Team",
+  "author": "Taktician Team",
   "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=22.0.0 <23.0.0"
   },
   "dependencies": {
-    "@automaker/platform": "1.0.0",
-    "@automaker/types": "1.0.0",
-    "@automaker/utils": "1.0.0"
+    "@taktician/platform": "1.0.0",
+    "@taktician/types": "1.0.0",
+    "@taktician/utils": "1.0.0"
   },
   "devDependencies": {
     "@types/node": "22.19.3",

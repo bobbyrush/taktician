@@ -1,8 +1,8 @@
 {
-  "name": "@automaker/utils",
+  "name": "@taktician/utils",
   "version": "1.0.0",
   "type": "module",
-  "description": "Shared utility functions for AutoMaker",
+  "description": "Shared utility functions for Taktician",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -30,17 +30,17 @@
     "test:watch": "vitest"
   },
   "keywords": [
-    "automaker",
+    "taktician",
     "utils"
   ],
-  "author": "AutoMaker Team",
+  "author": "Taktician Team",
   "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=22.0.0 <23.0.0"
   },
   "dependencies": {
-    "@automaker/platform": "1.0.0",
-    "@automaker/types": "1.0.0"
+    "@taktician/platform": "1.0.0",
+    "@taktician/types": "1.0.0"
   },
   "devDependencies": {
     "@types/node": "22.19.3",

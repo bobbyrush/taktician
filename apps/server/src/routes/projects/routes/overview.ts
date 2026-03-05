@@ -26,7 +26,7 @@ import type {
   ProjectHealthStatus,
   Feature,
   ProjectRef,
-} from '@automaker/types';
+} from '@taktician/types';
 import { getErrorMessage, logError } from '../common.js';
 
 /**

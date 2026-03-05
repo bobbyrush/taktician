@@ -1,13 +1,13 @@
 /**
- * POST /save-image endpoint - Save image to .automaker images directory
+ * POST /save-image endpoint - Save image to .taktician images directory
  */
 
 import type { Request, Response } from 'express';
 import * as secureFs from '../../../lib/secure-fs.js';
 import path from 'path';
 import { getErrorMessage, logError } from '../common.js';
-import { getImagesDir } from '@automaker/platform';
-import { sanitizeFilename } from '@automaker/utils';
+import { getImagesDir } from '@taktician/platform';
+import { sanitizeFilename } from '@taktician/utils';
 
 export function createSaveImageHandler() {
   return async (req: Request, res: Response): Promise<void> => {

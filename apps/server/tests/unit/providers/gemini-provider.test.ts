@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GeminiProvider } from '@/providers/gemini-provider.js';
-import type { ProviderMessage } from '@automaker/types';
+import type { ProviderMessage } from '@taktician/types';
 
 describe('gemini-provider.ts', () => {
   let provider: GeminiProvider;

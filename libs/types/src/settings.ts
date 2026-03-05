@@ -1019,6 +1019,14 @@ export interface MCPServerConfig {
 }
 
 /**
+ * ProjectWorkspaceType - High-level origin for a project record
+ *
+ * - local: Traditional local filesystem project
+ * - vps: SSH/VPS-backed workspace entry
+ */
+export type ProjectWorkspaceType = 'local' | 'vps';
+
+/**
  * ProjectRef - Minimal reference to a project stored in global settings
  *
  * Used for the projects list and project history. Full project data is loaded separately.
@@ -1044,6 +1052,12 @@ export interface ProjectRef {
   icon?: string;
   /** Custom icon image path for project switcher */
   customIconPath?: string;
+  /** Project/workspace origin type (defaults to local when omitted) */
+  workspaceType?: ProjectWorkspaceType;
+  /** VPS profile ID used when workspaceType is 'vps' */
+  vpsProfileId?: string;
+  /** Remote working directory used when workspaceType is 'vps' */
+  remotePath?: string;
 }
 
 /**
@@ -1076,6 +1090,33 @@ export interface ChatSessionRef {
   updatedAt: string;
   /** Whether session is archived */
   archived: boolean;
+}
+
+/**
+ * SshHostKeyPolicy - StrictHostKeyChecking behavior for SSH connections
+ */
+export type SshHostKeyPolicy = 'accept-new' | 'yes' | 'no';
+
+/**
+ * VpsProfile - Saved SSH target profile for integrated terminal connections
+ */
+export interface VpsProfile {
+  /** Unique identifier */
+  id: string;
+  /** Display label shown in UI */
+  name: string;
+  /** Remote host/IP */
+  host: string;
+  /** Remote SSH port */
+  port: number;
+  /** SSH username */
+  username: string;
+  /** Optional identity file path on backend host */
+  identityFile?: string;
+  /** Host key verification policy */
+  hostKeyPolicy?: SshHostKeyPolicy;
+  /** Optional grouping tags for organization */
+  groupTags?: string[];
 }
 
 /**
@@ -1343,6 +1384,8 @@ export interface GlobalSettings {
   // Terminal Configuration
   /** Default external terminal ID for "Open In Terminal" action (null = integrated terminal) */
   defaultTerminalId: string | null;
+  /** Saved VPS SSH profiles for integrated terminal connections */
+  vpsProfiles?: VpsProfile[];
 
   // Prompt Customization
   /** Custom prompts for Auto Mode, Agent Runner, Backlog Planning, and Enhancements */
@@ -1500,7 +1543,7 @@ export interface WorktreeInfo {
 }
 
 /**
- * ProjectSettings - Project-specific overrides stored in {projectPath}/.automaker/settings.json
+ * ProjectSettings - Project-specific overrides stored in {projectPath}/.taktician/settings.json
  *
  * Allows per-project customization without affecting global settings.
  * All fields are optional - missing values fall back to global settings.
@@ -1532,7 +1575,7 @@ export interface ProjectSettings {
   boardBackground?: BoardBackgroundSettings;
 
   // Project Branding
-  /** Custom icon image path for project switcher (relative to .automaker/) */
+  /** Custom icon image path for project switcher (relative to .taktician/) */
   customIconPath?: string;
 
   // UI Visibility
@@ -1809,6 +1852,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   mcpServers: [],
   defaultEditorCommand: null,
   defaultTerminalId: null,
+  vpsProfiles: [],
   enableSkills: true,
   skillsSources: ['user', 'project'],
   enableSubagents: true,

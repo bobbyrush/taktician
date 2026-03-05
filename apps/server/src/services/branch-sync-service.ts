@@ -7,7 +7,7 @@
  * the git logic is decoupled from HTTP request/response handling.
  */
 
-import { createLogger, getErrorMessage } from '@automaker/utils';
+import { createLogger, getErrorMessage } from '@taktician/utils';
 import { execGitCommand } from '../lib/git.js';
 
 const logger = createLogger('BranchSyncService');

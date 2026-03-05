@@ -1,5 +1,5 @@
 /**
- * Feature types for AutoMaker feature management
+ * Feature types for Taktician feature management
  */
 
 import type { PlanningMode, ThinkingLevel } from './settings.js';

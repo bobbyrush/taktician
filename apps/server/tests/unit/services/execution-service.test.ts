@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
-import type { Feature } from '@automaker/types';
+import type { Feature } from '@taktician/types';
 
 /**
  * Helper to normalize paths for cross-platform test compatibility.
@@ -30,7 +30,7 @@ import type { WorktreeResolver } from '../../../src/services/worktree-resolver.j
 import type { SettingsService } from '../../../src/services/settings-service.js';
 import { pipelineService } from '../../../src/services/pipeline-service.js';
 import * as secureFs from '../../../src/lib/secure-fs.js';
-import { getFeatureDir } from '@automaker/platform';
+import { getFeatureDir } from '@taktician/platform';
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
@@ -38,7 +38,7 @@ import {
   filterClaudeMdFromContext,
 } from '../../../src/lib/settings-helpers.js';
 import { extractSummary } from '../../../src/services/spec-parser.js';
-import { resolveModelString } from '@automaker/model-resolver';
+import { resolveModelString } from '@taktician/model-resolver';
 
 // Mock pipelineService
 vi.mock('../../../src/services/pipeline-service.js', () => ({
@@ -78,16 +78,16 @@ vi.mock('../../../src/lib/sdk-options.js', () => ({
 }));
 
 // Mock platform
-vi.mock('@automaker/platform', () => ({
+vi.mock('@taktician/platform', () => ({
   getFeatureDir: vi
     .fn()
     .mockImplementation(
-      (projectPath: string, featureId: string) => `${projectPath}/.automaker/features/${featureId}`
+      (projectPath: string, featureId: string) => `${projectPath}/.taktician/features/${featureId}`
     ),
 }));
 
 // Mock model-resolver
-vi.mock('@automaker/model-resolver', () => ({
+vi.mock('@taktician/model-resolver', () => ({
   resolveModelString: vi.fn().mockReturnValue('claude-sonnet-4'),
   DEFAULT_MODELS: { claude: 'claude-sonnet-4' },
 }));
@@ -104,8 +104,8 @@ vi.mock('../../../src/services/spec-parser.js', () => ({
   extractSummary: vi.fn().mockReturnValue('Test summary'),
 }));
 
-// Mock @automaker/utils
-vi.mock('@automaker/utils', () => ({
+// Mock @taktician/utils
+vi.mock('@taktician/utils', () => ({
   createLogger: vi.fn().mockReturnValue({
     info: vi.fn(),
     warn: vi.fn(),
@@ -223,7 +223,7 @@ describe('execution-service.ts', () => {
 
     // Re-setup platform mocks
     vi.mocked(getFeatureDir).mockImplementation(
-      (projectPath: string, featureId: string) => `${projectPath}/.automaker/features/${featureId}`
+      (projectPath: string, featureId: string) => `${projectPath}/.taktician/features/${featureId}`
     );
 
     // Default pipeline config (no steps)
@@ -456,6 +456,109 @@ describe('execution-service.ts', () => {
       expect(callArgs[4]).toBe('/test/project');
       // Model (index 6) should be resolved
       expect(callArgs[6]).toBe('claude-sonnet-4');
+    });
+
+    it('syncs VPS workspace and disables worktree execution', async () => {
+      const mockWorkspaceExecutionService = {
+        resolveVpsWorkspace: vi.fn().mockResolvedValue({
+          project: {
+            id: 'vps-1',
+            name: 'VPS Project',
+            path: '/test/project',
+            workspaceType: 'vps',
+            vpsProfileId: 'profile-1',
+            remotePath: '/srv/app',
+          },
+          profile: {
+            id: 'profile-1',
+            name: 'prod',
+            host: 'example.com',
+            port: 22,
+            username: 'root',
+          },
+        }),
+        syncRemoteToLocal: vi.fn().mockResolvedValue(true),
+        syncLocalToRemote: vi.fn().mockResolvedValue(true),
+      };
+
+      const svc = new ExecutionService(
+        mockEventBus,
+        mockConcurrencyManager,
+        mockWorktreeResolver,
+        mockSettingsService,
+        mockRunAgentFn,
+        mockExecutePipelineFn,
+        mockUpdateFeatureStatusFn,
+        mockLoadFeatureFn,
+        mockGetPlanningPromptPrefixFn,
+        mockSaveFeatureSummaryFn,
+        mockRecordLearningsFn,
+        mockContextExistsFn,
+        mockResumeFeatureFn,
+        mockTrackFailureFn,
+        mockSignalPauseFn,
+        mockRecordSuccessFn,
+        mockSaveExecutionStateFn,
+        mockLoadContextFilesFn,
+        mockWorkspaceExecutionService as unknown as ConstructorParameters<
+          typeof ExecutionService
+        >[18]
+      );
+
+      await svc.executeFeature('/test/project', 'feature-1', true, false, '/test/worktree');
+
+      expect(mockWorkspaceExecutionService.resolveVpsWorkspace).toHaveBeenCalledWith(
+        '/test/project'
+      );
+      expect(mockWorkspaceExecutionService.syncRemoteToLocal).toHaveBeenCalledWith('/test/project');
+      expect(mockWorkspaceExecutionService.syncLocalToRemote).toHaveBeenCalledWith('/test/project');
+      expect(mockWorktreeResolver.findWorktreeForBranch).not.toHaveBeenCalled();
+      const runAgentArgs = mockRunAgentFn.mock.calls[0];
+      expect(runAgentArgs[0]).toBe(normalizePath('/test/project'));
+      expect(runAgentArgs[1]).toBe('feature-1');
+      expect(runAgentArgs[4]).toBe('/test/project');
+      expect(runAgentArgs[6]).toBe('claude-sonnet-4');
+    });
+
+    it('skips VPS sync for internal calls', async () => {
+      const mockWorkspaceExecutionService = {
+        resolveVpsWorkspace: vi.fn(),
+        syncRemoteToLocal: vi.fn(),
+        syncLocalToRemote: vi.fn(),
+      };
+
+      const svc = new ExecutionService(
+        mockEventBus,
+        mockConcurrencyManager,
+        mockWorktreeResolver,
+        mockSettingsService,
+        mockRunAgentFn,
+        mockExecutePipelineFn,
+        mockUpdateFeatureStatusFn,
+        mockLoadFeatureFn,
+        mockGetPlanningPromptPrefixFn,
+        mockSaveFeatureSummaryFn,
+        mockRecordLearningsFn,
+        mockContextExistsFn,
+        mockResumeFeatureFn,
+        mockTrackFailureFn,
+        mockSignalPauseFn,
+        mockRecordSuccessFn,
+        mockSaveExecutionStateFn,
+        mockLoadContextFilesFn,
+        mockWorkspaceExecutionService as unknown as ConstructorParameters<
+          typeof ExecutionService
+        >[18]
+      );
+
+      await svc.executeFeature('/test/project', 'feature-1', false, false, undefined, {
+        continuationPrompt: 'Continue',
+        _calledInternally: true,
+      });
+
+      expect(mockWorkspaceExecutionService.resolveVpsWorkspace).not.toHaveBeenCalled();
+      expect(mockWorkspaceExecutionService.syncRemoteToLocal).not.toHaveBeenCalled();
+      expect(mockWorkspaceExecutionService.syncLocalToRemote).not.toHaveBeenCalled();
     });
 
     it('executes pipeline after agent completes', async () => {
@@ -1718,7 +1821,7 @@ describe('execution-service.ts', () => {
 
       // Verify readFile was called with the correct path derived from getFeatureDir
       expect(secureFs.readFile).toHaveBeenCalledWith(
-        '/test/project/.automaker/features/feature-1/agent-output.md',
+        '/test/project/.taktician/features/feature-1/agent-output.md',
         'utf-8'
       );
     });
@@ -1783,7 +1886,7 @@ describe('execution-service.ts', () => {
 
     it('does not call recordMemoryUsage when output is empty and memoryFiles is empty', async () => {
       vi.mocked(secureFs.readFile).mockResolvedValue('');
-      const { recordMemoryUsage } = await import('@automaker/utils');
+      const { recordMemoryUsage } = await import('@taktician/utils');
 
       const svc = createServiceWithMocks();
       await svc.executeFeature('/test/project', 'feature-1');

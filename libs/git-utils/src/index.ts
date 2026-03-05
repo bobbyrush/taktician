@@ -1,6 +1,6 @@
 /**
- * @automaker/git-utils
- * Git operations utilities for AutoMaker
+ * @taktician/git-utils
+ * Git operations utilities for Taktician
  */
 
 // Export command execution utilities

@@ -16,7 +16,7 @@ import type {
   LinkedPRInfo,
   ThinkingLevel,
   ReasoningEffort,
-} from '@automaker/types';
+} from '@taktician/types';
 import {
   DEFAULT_PHASE_MODELS,
   isClaudeModel,
@@ -24,8 +24,8 @@ import {
   isCursorModel,
   isOpencodeModel,
   supportsStructuredOutput,
-} from '@automaker/types';
-import { resolvePhaseModel, resolveModelString } from '@automaker/model-resolver';
+} from '@taktician/types';
+import { resolvePhaseModel, resolveModelString } from '@taktician/model-resolver';
 import { extractJson } from '../../../lib/json-extractor.js';
 import { writeValidation } from '../../../lib/validation-storage.js';
 import { streamingQuery } from '../../../providers/simple-query-service.js';
@@ -171,7 +171,7 @@ ${basePrompt}`;
 
     // Check if the model is a provider model (like "GLM-4.5-Air")
     // If so, get the provider config and resolved Claude model
-    let claudeCompatibleProvider: import('@automaker/types').ClaudeCompatibleProvider | undefined;
+    let claudeCompatibleProvider: import('@taktician/types').ClaudeCompatibleProvider | undefined;
     let providerResolvedModel: string | undefined;
     let credentials = await settingsService?.getCredentials();
 

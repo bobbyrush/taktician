@@ -3,13 +3,13 @@ import { TerminalService, getTerminalService } from '@/services/terminal-service
 import * as pty from 'node-pty';
 import * as os from 'os';
 import * as path from 'path';
-import * as platform from '@automaker/platform';
+import * as platform from '@taktician/platform';
 import * as secureFs from '@/lib/secure-fs.js';
 
 vi.mock('node-pty');
 vi.mock('os');
-vi.mock('@automaker/platform', async () => {
-  const actual = await vi.importActual('@automaker/platform');
+vi.mock('@taktician/platform', async () => {
+  const actual = await vi.importActual('@taktician/platform');
   return {
     ...actual,
     systemPathExists: vi.fn(),
@@ -411,6 +411,107 @@ describe('terminal-service.ts', () => {
       expect(session).not.toBeNull();
       expect(exitCallback).toHaveBeenCalledWith(session!.id, 0);
       expect(service.getSession(session!.id)).toBeUndefined();
+    });
+
+    it('should create SSH-backed terminal sessions with expected ssh args', async () => {
+      vi.mocked(platform.systemPathExists).mockReturnValue(true);
+      vi.mocked(secureFs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+
+      const session = await service.createSession({
+        connection: {
+          type: 'ssh',
+          ssh: {
+            host: 'example.com',
+            username: 'ubuntu',
+            port: 2222,
+            identityFile: '/home/user/.ssh/id_ed25519',
+            hostKeyPolicy: 'accept-new',
+            label: 'Production',
+          },
+        },
+      });
+
+      expect(session).not.toBeNull();
+      expect(session!.connection).toEqual({
+        type: 'ssh',
+        host: 'example.com',
+        username: 'ubuntu',
+        port: 2222,
+        identityFile: '/home/user/.ssh/id_ed25519',
+        hostKeyPolicy: 'accept-new',
+        label: 'Production',
+      });
+      expect(pty.spawn).toHaveBeenCalledWith(
+        '/usr/bin/ssh',
+        [
+          '-tt',
+          '-p',
+          '2222',
+          '-o',
+          'StrictHostKeyChecking=accept-new',
+          '-i',
+          '/home/user/.ssh/id_ed25519',
+          'ubuntu@example.com',
+        ],
+        expect.objectContaining({
+          cols: 80,
+          rows: 24,
+        })
+      );
+    });
+
+    it('should throw when SSH configuration is invalid', async () => {
+      await expect(
+        service.createSession({
+          connection: {
+            type: 'ssh',
+            ssh: {
+              host: 'bad host',
+              username: 'ubuntu',
+            },
+          },
+        })
+      ).rejects.toThrow('Invalid SSH host');
+    });
+
+    it('should throw when ssh client binary is missing', async () => {
+      vi.mocked(platform.systemPathExists).mockImplementation((systemPath: string) => {
+        if (
+          systemPath === '/usr/bin/ssh' ||
+          systemPath === '/bin/ssh' ||
+          systemPath === '/usr/local/bin/ssh' ||
+          systemPath === 'ssh'
+        ) {
+          return false;
+        }
+        return true;
+      });
+
+      await expect(
+        service.createSession({
+          connection: {
+            type: 'ssh',
+            ssh: {
+              host: 'example.com',
+              username: 'ubuntu',
+            },
+          },
+        })
+      ).rejects.toThrow('SSH client not found on server');
+    });
+
+    it('should still support explicit local connection mode', async () => {
+      vi.mocked(platform.systemPathExists).mockReturnValue(true);
+      vi.mocked(secureFs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.spyOn(process, 'env', 'get').mockReturnValue({ SHELL: '/bin/bash' });
+
+      const session = await service.createSession({
+        connection: { type: 'local' },
+      });
+
+      expect(session).not.toBeNull();
+      expect(session!.connection).toEqual({ type: 'local' });
+      expect(session!.shell).toBe('/bin/bash');
     });
   });
 

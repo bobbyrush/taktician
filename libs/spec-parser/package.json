@@ -1,8 +1,8 @@
 {
-  "name": "@automaker/spec-parser",
+  "name": "@taktician/spec-parser",
   "version": "1.0.0",
   "type": "module",
-  "description": "XML spec parser for AutoMaker - parses and generates app_spec.txt XML",
+  "description": "XML spec parser for Taktician - parses and generates app_spec.txt XML",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -18,17 +18,17 @@
     "test:watch": "vitest"
   },
   "keywords": [
-    "automaker",
+    "taktician",
     "spec-parser",
     "xml"
   ],
-  "author": "AutoMaker Team",
+  "author": "Taktician Team",
   "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=22.0.0 <23.0.0"
   },
   "dependencies": {
-    "@automaker/types": "1.0.0",
+    "@taktician/types": "1.0.0",
     "fast-xml-parser": "^5.3.3"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 /**
- * @automaker/model-resolver
- * Model resolution utilities for AutoMaker
+ * @taktician/model-resolver
+ * Model resolution utilities for Taktician
  */
 
 // Re-export constants from types
@@ -10,7 +10,7 @@ export {
   DEFAULT_MODELS,
   type ModelAlias,
   type CursorModelId,
-} from '@automaker/types';
+} from '@taktician/types';
 
 // Export resolver functions
 export {

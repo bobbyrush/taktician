@@ -3,11 +3,11 @@
  */
 
 import type { Request, Response } from 'express';
-import { createLogger } from '@automaker/utils';
-import { CODEX_MODEL_MAP } from '@automaker/types';
+import { createLogger } from '@taktician/utils';
+import { CODEX_MODEL_MAP } from '@taktician/types';
 import { ProviderFactory } from '../../../providers/provider-factory.js';
 import { getApiKey } from '../common.js';
-import { getCodexAuthIndicators } from '@automaker/platform';
+import { getCodexAuthIndicators } from '@taktician/platform';
 import {
   createSecureAuthEnv,
   AuthSessionManager,
@@ -61,6 +61,11 @@ const RATE_LIMIT_PATTERNS = [
   'resets',
   '429',
 ];
+
+function toCodexProviderModelId(modelId: string): string {
+  // Codex provider expects the raw OpenAI model name (without "codex-" prefix).
+  return modelId.startsWith('codex-') ? modelId.slice('codex-'.length) : modelId;
+}
 
 function containsAuthError(text: string): boolean {
   const lowerText = text.toLowerCase();
@@ -162,7 +167,7 @@ export function createVerifyCodexAuthHandler() {
         }
         const stream = provider.executeQuery({
           prompt: AUTH_PROMPT,
-          model: CODEX_MODEL_MAP.gpt52Codex,
+          model: toCodexProviderModelId(CODEX_MODEL_MAP.gpt52Codex),
           cwd: process.cwd(),
           maxTurns: 1,
           allowedTools: [],

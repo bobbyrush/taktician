@@ -7,7 +7,7 @@
 
 import type { Request, Response } from 'express';
 import { discoverFilesystemAgents } from '../../../lib/agent-discovery.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@taktician/utils';
 
 const logger = createLogger('DiscoverAgentsRoute');
 

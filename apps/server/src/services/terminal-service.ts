@@ -12,7 +12,7 @@ import * as path from 'path';
 // secureFs is used for user-controllable paths (working directory validation)
 // to enforce ALLOWED_ROOT_DIRECTORY security boundary
 import * as secureFs from '../lib/secure-fs.js';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@taktician/utils';
 import type { SettingsService } from './settings-service.js';
 import { getTerminalThemeColors, getAllTerminalThemes } from '../lib/terminal-themes-data.js';
 import {
@@ -20,7 +20,7 @@ import {
   getTerminalDir,
   ensureRcFilesUpToDate,
   type TerminalConfig,
-} from '@automaker/platform';
+} from '@taktician/platform';
 
 const logger = createLogger('Terminal');
 // System paths module handles shell binary checks and WSL detection
@@ -30,7 +30,7 @@ import {
   systemPathReadFileSync,
   getWslVersionPath,
   getShellPaths,
-} from '@automaker/platform';
+} from '@taktician/platform';
 
 const BASH_LOGIN_ARG = '--login';
 const BASH_RCFILE_ARG = '--rcfile';
@@ -51,7 +51,8 @@ const DEFAULT_CUSTOM_ALIASES = '';
 const DEFAULT_CUSTOM_ENV_VARS: Record<string, string> = {};
 const PROMPT_THEME_CUSTOM = 'custom';
 const PROMPT_THEME_PREFIX = 'omp-';
-const OMP_THEME_ENV_VAR = 'AUTOMAKER_OMP_THEME';
+const OMP_THEME_ENV_VAR = 'TAKTICIAN_OMP_THEME';
+const SSH_HOST_KEY_POLICY_DEFAULT = 'accept-new';
 
 // Maximum scrollback buffer size (characters)
 const MAX_SCROLLBACK_SIZE = 50000; // ~50KB per terminal
@@ -179,12 +180,48 @@ function buildEffectiveTerminalConfig(
   };
 }
 
+export type TerminalHostKeyPolicy = 'accept-new' | 'yes' | 'no';
+
+export interface TerminalSshConnectionOptions {
+  host: string;
+  port?: number;
+  username: string;
+  identityFile?: string;
+  hostKeyPolicy?: TerminalHostKeyPolicy;
+  label?: string;
+}
+
+export type TerminalConnectionOptions =
+  | { type: 'local' }
+  | { type: 'ssh'; ssh: TerminalSshConnectionOptions };
+
+export type TerminalSessionConnection =
+  | { type: 'local' }
+  | {
+      type: 'ssh';
+      host: string;
+      port: number;
+      username: string;
+      identityFile?: string;
+      hostKeyPolicy: TerminalHostKeyPolicy;
+      label?: string;
+    };
+
+export interface TerminalSessionSummary {
+  id: string;
+  cwd: string;
+  createdAt: Date;
+  shell: string;
+  connection: TerminalSessionConnection;
+}
+
 export interface TerminalSession {
   id: string;
   pty: pty.IPty;
   cwd: string;
   createdAt: Date;
   shell: string;
+  connection: TerminalSessionConnection;
   scrollbackBuffer: string; // Store recent output for replay on reconnect
   outputBuffer: string; // Pending output to be flushed
   flushTimeout: NodeJS.Timeout | null; // Throttle timer
@@ -198,6 +235,7 @@ export interface TerminalOptions {
   cols?: number;
   rows?: number;
   env?: Record<string, string>;
+  connection?: TerminalConnectionOptions;
 }
 
 type DataCallback = (sessionId: string, data: string) => void;
@@ -235,6 +273,97 @@ export class TerminalService extends EventEmitter {
     } else {
       ptyProcess.kill(signal);
     }
+  }
+
+  private resolveSshBinary(): string | null {
+    const candidates =
+      os.platform() === 'win32'
+        ? ['C:\\Windows\\System32\\OpenSSH\\ssh.exe', 'ssh.exe', 'ssh']
+        : ['/usr/bin/ssh', '/bin/ssh', '/usr/local/bin/ssh', 'ssh'];
+
+    for (const candidate of candidates) {
+      try {
+        if (systemPathExists(candidate)) {
+          return candidate;
+        }
+      } catch {
+        // Skip disallowed/non-existent paths
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeSshConnection(
+    options: TerminalSshConnectionOptions | undefined
+  ): Omit<Extract<TerminalSessionConnection, { type: 'ssh' }>, 'type'> {
+    if (!options) {
+      throw new Error('SSH connection settings are required');
+    }
+
+    const host = options.host?.trim();
+    const username = options.username?.trim();
+    const port = options.port ?? 22;
+    const identityFile = options.identityFile?.trim();
+    const label = options.label?.trim();
+    const hostKeyPolicy = options.hostKeyPolicy ?? SSH_HOST_KEY_POLICY_DEFAULT;
+
+    if (!host || host.includes('\0') || /\s/.test(host)) {
+      throw new Error('Invalid SSH host');
+    }
+    if (!username || username.includes('\0') || /\s/.test(username)) {
+      throw new Error('Invalid SSH username');
+    }
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      throw new Error('Invalid SSH port');
+    }
+    if (identityFile && identityFile.includes('\0')) {
+      throw new Error('Invalid SSH identity file path');
+    }
+    if (label && label.includes('\0')) {
+      throw new Error('Invalid SSH connection label');
+    }
+    if (hostKeyPolicy !== 'accept-new' && hostKeyPolicy !== 'yes' && hostKeyPolicy !== 'no') {
+      throw new Error('Invalid SSH host key policy');
+    }
+
+    return {
+      host,
+      port,
+      username,
+      identityFile: identityFile || undefined,
+      hostKeyPolicy,
+      label: label || undefined,
+    };
+  }
+
+  private buildSshArgs(
+    ssh: Omit<Extract<TerminalSessionConnection, { type: 'ssh' }>, 'type'>
+  ): string[] {
+    const args = [
+      '-tt',
+      '-p',
+      String(ssh.port),
+      '-o',
+      `StrictHostKeyChecking=${ssh.hostKeyPolicy}`,
+    ];
+
+    if (ssh.identityFile) {
+      args.push('-i', ssh.identityFile);
+    }
+
+    args.push(`${ssh.username}@${ssh.host}`);
+    return args;
+  }
+
+  private toSessionSummary(session: TerminalSession): TerminalSessionSummary {
+    return {
+      id: session.id,
+      cwd: session.cwd,
+      createdAt: session.createdAt,
+      shell: session.shell,
+      connection: session.connection,
+    };
   }
 
   /**
@@ -440,30 +569,53 @@ export class TerminalService extends EventEmitter {
     }
 
     const id = `term-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-
-    const { shell: detectedShell, args: detectedShellArgs } = this.detectShell();
-    const shell = options.shell || detectedShell;
-    let shellArgs = options.shell ? getShellArgsForPath(shell) : [...detectedShellArgs];
+    const sshOptions =
+      options.connection && options.connection.type === 'ssh' ? options.connection.ssh : undefined;
+    const isSshConnection = Boolean(sshOptions);
 
     // Validate and resolve working directory
     // Uses secureFs internally to enforce ALLOWED_ROOT_DIRECTORY
     const cwd = await this.resolveWorkingDirectory(options.cwd);
 
+    let spawnCommand: string;
+    let spawnArgs: string[];
+    let sessionConnection: TerminalSessionConnection;
+
+    if (isSshConnection) {
+      const sshBinary = this.resolveSshBinary();
+      if (!sshBinary) {
+        throw new Error('SSH client not found on server');
+      }
+
+      const sshConnection = this.normalizeSshConnection(sshOptions);
+      spawnCommand = sshBinary;
+      spawnArgs = this.buildSshArgs(sshConnection);
+      sessionConnection = {
+        type: 'ssh',
+        ...sshConnection,
+      };
+    } else {
+      const { shell: detectedShell, args: detectedShellArgs } = this.detectShell();
+      spawnCommand = options.shell || detectedShell;
+      spawnArgs = options.shell ? getShellArgsForPath(spawnCommand) : [...detectedShellArgs];
+      sessionConnection = { type: 'local' };
+    }
+
     // Build environment with some useful defaults
     // These settings ensure consistent terminal behavior across platforms
-    // First, create a clean copy of process.env excluding Automaker-specific variables
+    // First, create a clean copy of process.env excluding Taktician-specific variables
     // that could pollute user shells (e.g., PORT would affect Next.js/other dev servers)
-    const automakerEnvVars = ['PORT', 'DATA_DIR', 'AUTOMAKER_API_KEY', 'NODE_PATH'];
+    const takticianEnvVars = ['PORT', 'DATA_DIR', 'TAKTICIAN_API_KEY', 'NODE_PATH'];
     const cleanEnv: Record<string, string> = {};
     for (const [key, value] of Object.entries(process.env)) {
-      if (value !== undefined && !automakerEnvVars.includes(key)) {
+      if (value !== undefined && !takticianEnvVars.includes(key)) {
         cleanEnv[key] = value;
       }
     }
 
     // Terminal config injection (custom prompts, themes)
     const terminalConfigEnv: Record<string, string> = {};
-    if (this.settingsService) {
+    if (this.settingsService && !isSshConnection) {
       try {
         logger.info(
           `[createSession] Checking terminal config for session ${id}, cwd: ${options.cwd || cwd}`
@@ -505,7 +657,7 @@ export class TerminalService extends EventEmitter {
           );
 
           // Set shell-specific env vars
-          const shellName = getShellBasename(shell).toLowerCase();
+          const shellName = getShellBasename(spawnCommand).toLowerCase();
           if (ompThemeName && effectiveConfig.customPrompt) {
             terminalConfigEnv[OMP_THEME_ENV_VAR] = ompThemeName;
           }
@@ -513,23 +665,23 @@ export class TerminalService extends EventEmitter {
           if (shellName.includes(SHELL_NAME_BASH)) {
             const bashRcFilePath = getRcFilePath(options.cwd || cwd, SHELL_NAME_BASH);
             terminalConfigEnv.BASH_ENV = bashRcFilePath;
-            terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
+            terminalConfigEnv.TAKTICIAN_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
-            terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
-            shellArgs = applyBashRcFileArgs(shellArgs, bashRcFilePath);
+            terminalConfigEnv.TAKTICIAN_THEME = currentTheme;
+            spawnArgs = applyBashRcFileArgs(spawnArgs, bashRcFilePath);
           } else if (shellName.includes(SHELL_NAME_ZSH)) {
             terminalConfigEnv.ZDOTDIR = getTerminalDir(options.cwd || cwd);
-            terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
+            terminalConfigEnv.TAKTICIAN_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
-            terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
+            terminalConfigEnv.TAKTICIAN_THEME = currentTheme;
           } else if (shellName === SHELL_NAME_SH) {
             terminalConfigEnv.ENV = getRcFilePath(options.cwd || cwd, SHELL_NAME_SH);
-            terminalConfigEnv.AUTOMAKER_CUSTOM_PROMPT = effectiveConfig.customPrompt
+            terminalConfigEnv.TAKTICIAN_CUSTOM_PROMPT = effectiveConfig.customPrompt
               ? 'true'
               : 'false';
-            terminalConfigEnv.AUTOMAKER_THEME = currentTheme;
+            terminalConfigEnv.TAKTICIAN_THEME = currentTheme;
           }
 
           // Add custom env vars from config
@@ -548,7 +700,7 @@ export class TerminalService extends EventEmitter {
       ...cleanEnv,
       TERM: 'xterm-256color',
       COLORTERM: 'truecolor',
-      TERM_PROGRAM: 'automaker-terminal',
+      TERM_PROGRAM: 'taktician-terminal',
       // Ensure proper locale for character handling
       LANG: process.env.LANG || 'en_US.UTF-8',
       LC_ALL: process.env.LC_ALL || process.env.LANG || 'en_US.UTF-8',
@@ -556,7 +708,7 @@ export class TerminalService extends EventEmitter {
       ...terminalConfigEnv, // Apply terminal config env vars last (highest priority)
     };
 
-    logger.info(`Creating session ${id} with shell: ${shell} in ${cwd}`);
+    logger.info(`Creating session ${id} with command: ${spawnCommand} in ${cwd}`);
 
     // Build PTY spawn options
     const ptyOptions: pty.IPtyForkOptions = {
@@ -582,7 +734,7 @@ export class TerminalService extends EventEmitter {
 
     let ptyProcess: pty.IPty;
     try {
-      ptyProcess = pty.spawn(shell, shellArgs, ptyOptions);
+      ptyProcess = pty.spawn(spawnCommand, spawnArgs, ptyOptions);
     } catch (spawnError) {
       const errorMessage = spawnError instanceof Error ? spawnError.message : String(spawnError);
 
@@ -595,7 +747,7 @@ export class TerminalService extends EventEmitter {
 
           try {
             (ptyOptions as pty.IWindowsPtyForkOptions).useConpty = false;
-            ptyProcess = pty.spawn(shell, shellArgs, ptyOptions);
+            ptyProcess = pty.spawn(spawnCommand, spawnArgs, ptyOptions);
             logger.info(`[createSession] Successfully spawned session ${id} with winpty fallback`);
           } catch (fallbackError) {
             const fallbackMessage =
@@ -618,7 +770,8 @@ export class TerminalService extends EventEmitter {
       pty: ptyProcess,
       cwd,
       createdAt: new Date(),
-      shell,
+      shell: spawnCommand,
+      connection: sessionConnection,
       scrollbackBuffer: '',
       outputBuffer: '',
       flushTimeout: null,
@@ -835,18 +988,19 @@ export class TerminalService extends EventEmitter {
   /**
    * Get all active sessions
    */
-  getAllSessions(): Array<{
-    id: string;
-    cwd: string;
-    createdAt: Date;
-    shell: string;
-  }> {
-    return Array.from(this.sessions.values()).map((s) => ({
-      id: s.id,
-      cwd: s.cwd,
-      createdAt: s.createdAt,
-      shell: s.shell,
-    }));
+  getAllSessions(): TerminalSessionSummary[] {
+    return Array.from(this.sessions.values()).map((session) => this.toSessionSummary(session));
+  }
+
+  /**
+   * Get summarized session metadata by ID
+   */
+  getSessionInfo(sessionId: string): TerminalSessionSummary | null {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return null;
+    }
+    return this.toSessionSummary(session);
   }
 
   /**
@@ -883,14 +1037,14 @@ export class TerminalService extends EventEmitter {
 
       if (effectiveConfig.enabled && terminalConfig) {
         const themeColors = getTerminalThemeColors(
-          newTheme as import('@automaker/types').ThemeMode
+          newTheme as import('@taktician/types').ThemeMode
         );
         const allThemes = getAllTerminalThemes();
 
         // Regenerate RC files with new theme
         await ensureRcFilesUpToDate(
           projectPath,
-          newTheme as import('@automaker/types').ThemeMode,
+          newTheme as import('@taktician/types').ThemeMode,
           effectiveConfig,
           themeColors,
           allThemes

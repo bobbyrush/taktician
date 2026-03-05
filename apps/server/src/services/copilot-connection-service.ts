@@ -7,7 +7,7 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { createLogger } from '@automaker/utils';
+import { createLogger } from '@taktician/utils';
 import { COPILOT_DISCONNECTED_MARKER_FILE } from '../routes/setup/common.js';
 
 const logger = createLogger('CopilotConnectionService');
@@ -17,8 +17,8 @@ const logger = createLogger('CopilotConnectionService');
  */
 function getMarkerPath(projectRoot?: string): string {
   const root = projectRoot || process.cwd();
-  const automakerDir = path.join(root, '.automaker');
-  return path.join(automakerDir, COPILOT_DISCONNECTED_MARKER_FILE);
+  const takticianDir = path.join(root, '.taktician');
+  return path.join(takticianDir, COPILOT_DISCONNECTED_MARKER_FILE);
 }
 
 /**
@@ -51,11 +51,11 @@ export async function connectCopilot(projectRoot?: string): Promise<void> {
  */
 export async function disconnectCopilot(projectRoot?: string): Promise<void> {
   const root = projectRoot || process.cwd();
-  const automakerDir = path.join(root, '.automaker');
-  const markerPath = path.join(automakerDir, COPILOT_DISCONNECTED_MARKER_FILE);
+  const takticianDir = path.join(root, '.taktician');
+  const markerPath = path.join(takticianDir, COPILOT_DISCONNECTED_MARKER_FILE);
 
-  // Ensure .automaker directory exists
-  await fs.mkdir(automakerDir, { recursive: true });
+  // Ensure .taktician directory exists
+  await fs.mkdir(takticianDir, { recursive: true });
 
   // Create the disconnection marker
   await fs.writeFile(markerPath, 'Copilot CLI disconnected from app');

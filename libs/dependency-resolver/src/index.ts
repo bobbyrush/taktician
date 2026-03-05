@@ -1,6 +1,6 @@
 /**
- * @automaker/dependency-resolver
- * Feature dependency resolution for AutoMaker
+ * @taktician/dependency-resolver
+ * Feature dependency resolution for Taktician
  */
 
 export {
